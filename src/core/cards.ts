@@ -1,7 +1,7 @@
 /* Playing card model and deck helpers. */
 import type { Card, CardColor, Rank, Suit } from '../types';
 
-export const SUITS = [
+const SUITS = [
   { s: '♠', c: 'black' },
   { s: '♥', c: 'red' },
   { s: '♦', c: 'red' },

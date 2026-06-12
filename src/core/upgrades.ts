@@ -39,7 +39,7 @@ export const HAND_UPGRADES = {
   high: { chips: 10, mult: 0 },
 } satisfies Record<HandTypeKey, HandUpgrade>;
 
-export const HAND_UPGRADE_PRICE_BONUS = {
+const HAND_UPGRADE_PRICE_BONUS = {
   sflush: 2,
   four: 2,
   full: 1,

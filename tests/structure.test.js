@@ -10,6 +10,10 @@ const modalsView = require(path.join(__dirname, '..', 'src', 'ui', 'modals-view.
 const grain = require(path.join(__dirname, '..', 'src', 'systems', 'grain.js'));
 const packageJson = require(path.join(__dirname, '..', 'package.json'));
 const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+const ciWorkflow = fs.readFileSync(
+  path.join(__dirname, '..', '.github', 'workflows', 'ci.yml'),
+  'utf8'
+);
 
 let fail = 0;
 function has(name, value, type = 'function') {
@@ -80,6 +84,13 @@ includes(
 );
 includes('package dev script', packageJson.scripts.dev || '', /\bvite\b/);
 includes('package build script', packageJson.scripts.build || '', /\bvite build\b/);
+includes('ci test script', ciWorkflow, /\bnpm test\b/);
+if (/node\s+tests\/core\.test\.js/.test(ciWorkflow)) {
+  console.error('FAIL ci workflow should not bypass npm test');
+  fail++;
+} else {
+  console.log('ok ci workflow uses npm test entrypoint');
+}
 const stateMod = safeRequire('.tmp/test-build/state/game-state.js');
 has('createInitialState', stateMod.createInitialState);
 has('createShopState', stateMod.createShopState);
