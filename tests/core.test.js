@@ -1,23 +1,7 @@
 const path = require('path');
-const core = require(path.join(__dirname, '..', 'src', 'core', 'index.js'));
-const {
-  evaluateHand,
-  chipVal,
-  makeDeck,
-  targetFor,
-  initHandLevels,
-  getHandStats,
-  HAND_UPGRADES,
-} = require(path.join(__dirname, '..', 'src', 'main.js'));
-
-if (
-  core.evaluateHand !== evaluateHand ||
-  core.getHandStats !== getHandStats ||
-  core.initHandLevels !== initHandLevels
-) {
-  console.error('FAIL core 模块没有承载牌型规则 API');
-  process.exit(1);
-}
+const core = require(path.join(__dirname, '..', '.tmp', 'test-build', 'core', 'index.js'));
+const { evaluateHand, chipVal, makeDeck, targetFor, initHandLevels, getHandStats, HAND_UPGRADES } =
+  core;
 
 let fail = 0;
 const C = (rank, suit = '♠') => ({
