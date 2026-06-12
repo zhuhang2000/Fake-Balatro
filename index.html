@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>小丑终端 JOKER.SYS — 原创像素纸牌机原型</title>
+<link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+
+<div id="cabinet">
+
+  <!-- ════ 霓虹招牌 ════ -->
+  <div id="marquee">
+    <div class="bulbs"></div>
+    <h1 class="title">小 丑 终 端<span class="title-sub">JOKER.SYS&nbsp;v1.0</span></h1>
+    <div class="bulbs rev"></div>
+  </div>
+
+  <!-- ════ CRT 屏幕 ════ -->
+  <div id="screen">
+
+    <!-- HUD 仪表 -->
+    <div id="hud">
+      <div class="hud-box"><div class="hud-label">关 卡</div><div class="hud-value" id="levelNum">1</div></div>
+      <div class="hud-box target"><div class="hud-label">目标分数</div><div class="hud-value" id="targetScore">0</div></div>
+      <div class="hud-box scorebox"><div class="hud-label">本关得分</div><div class="hud-value" id="roundScore">0</div></div>
+      <div class="hud-box totalbox"><div class="hud-label">累计得分</div><div class="hud-value" id="totalScore">0</div></div>
+      <div class="hud-box goldbox"><div class="hud-label">金 币</div><div class="hud-value" id="goldVal">0</div></div>
+    </div>
+
+    <!-- 小丑栏 -->
+    <div id="jokerBar"></div>
+
+    <!-- 计分读出屏 -->
+    <div id="readout">
+      <div id="handName">— 选择最多 5 张牌 —</div>
+      <div id="calc" class="preview">
+        <span class="chips-disp" id="chipsDisp">0</span>
+        <span class="x">×</span>
+        <span class="mult-disp" id="multDisp">0</span>
+        <span class="eq">=</span>
+        <span class="total-disp" id="totalDisp"></span>
+      </div>
+    </div>
+
+    <!-- 出牌结算区 -->
+    <div id="playArea"></div>
+
+    <!-- 手牌 -->
+    <div id="handArea"></div>
+
+    <!-- 控制台 -->
+    <div id="controls">
+      <div class="ctl-group">
+        <button id="sortRank" class="btn-mini on">点数</button>
+        <button id="sortSuit" class="btn-mini">花色</button>
+        <button id="btnHelp" class="btn-mini">牌型表</button>
+      </div>
+      <button id="btnPlay" class="btn" disabled>出 牌</button>
+      <button id="btnDiscard" class="btn btn-discard" disabled>弃 牌</button>
+      <div class="ctl-group">
+        <div class="counter">已选 <span id="selCount">0</span>/5</div>
+        <div class="counter">出牌 <span id="handsLeft">0</span></div>
+        <div class="counter">弃牌 <span id="discardsLeft">0</span></div>
+        <div class="counter">牌堆 <span id="deckLeft">0</span></div>
+      </div>
+    </div>
+
+    <!-- 弹窗：怪奇商店 -->
+    <div id="shop" class="modal hidden">
+      <div class="modal-card">
+        <h2>怪 奇 商 店</h2>
+        <div id="rewardLine"></div>
+        <div class="shop-gold">持有金币 <span id="shopGold" class="goldtxt">0</span> · 累计得分 <span id="shopTotal" class="goodtxt">0</span></div>
+        <div id="shopOffers"></div>
+        <div id="shopOwned"></div>
+        <div class="modal-actions">
+          <button id="btnReroll" class="btn-mini">刷新货架 -2金</button>
+          <button id="btnNext" class="btn btn-gold">下一关 ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 弹窗：牌型表 -->
+    <div id="help" class="modal hidden">
+      <div class="modal-card">
+        <h2>牌 型 表</h2>
+        <table id="handTable"></table>
+        <div class="modal-actions"><button id="btnCloseHelp" class="btn-mini">关 闭</button></div>
+      </div>
+    </div>
+
+    <!-- 弹窗：游戏结束 -->
+    <div id="gameover" class="modal hidden">
+      <div class="modal-card">
+        <h2 class="dangertxt">游 戏 结 束</h2>
+        <p id="overStats"></p>
+        <div class="modal-actions"><button id="btnRestart" class="btn">重新开始</button></div>
+      </div>
+    </div>
+
+    <!-- 弹窗：通关 -->
+    <div id="victory" class="modal hidden">
+      <div class="modal-card">
+        <h2 class="goldtxt">通 关 ！</h2>
+        <p>你压垮了第 8 关的目标分数。<br>小丑们露出了满意的微笑……还想继续吗？</p>
+        <p id="vicStats" class="goodtxt"></p>
+        <div class="modal-actions">
+          <button id="btnEndless" class="btn btn-gold">无尽模式 ▶</button>
+          <button id="btnRestartV" class="btn-mini">重新开始</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 弹窗：开机投币 -->
+    <div id="boot" class="modal">
+      <div class="modal-card">
+        <div class="boot-suits"><span>♠</span><span class="r">♥</span><span class="r">♦</span><span>♣</span></div>
+        <h2>小 丑 终 端</h2>
+        <div class="boot-sub">JOKER.SYS v1.0 · 原创像素纸牌机原型</div>
+        <p class="boot-tip">组成牌型 → 筹码 × 倍率 → 冲击目标分数<br>过关进入商店，收集怪诞小丑牌</p>
+        <button id="btnBoot" class="btn btn-gold">投 币 开 始</button>
+        <div class="boot-note">点击后开启声音（全部由 Web Audio 实时合成）</div>
+      </div>
+    </div>
+
+    <!-- 特效层（自下而上：粒子 / 噪点 / 扫描线 / 暗角 / 闪光） -->
+    <canvas id="fx"></canvas>
+    <div id="grain"></div>
+    <div id="flash"></div>
+    <div id="scanlines"></div>
+    <div id="vignette"></div>
+  </div>
+
+  <div id="plate">原创练习原型 · 全部视觉与音效由代码实时生成 · 无外部素材</div>
+</div>
+
+<script src="src/core/utils.js"></script>
+<script src="src/core/cards.js"></script>
+<script src="src/core/upgrades.js"></script>
+<script src="src/core/hands.js"></script>
+<script src="src/core/index.js"></script>
+<script src="src/systems/audio.js"></script>
+<script src="src/data/jokers.js"></script>
+<script src="src/systems/fx.js"></script>
+<script src="src/state/game-state.js"></script>
+<script src="src/ui/shop-view.js"></script>
+<script src="src/ui/cards-view.js"></script>
+<script src="src/ui/hud-view.js"></script>
+<script src="src/ui/readout-view.js"></script>
+<script src="src/ui/modals-view.js"></script>
+<script src="src/systems/grain.js"></script>
+<script src="src/flow/shop-flow.js"></script>
+<script src="src/flow/scoring-flow.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>
