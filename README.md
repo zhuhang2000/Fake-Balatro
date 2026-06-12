@@ -1,32 +1,42 @@
 # 小丑终端 JOKER.SYS
 
-一个零外部依赖的像素纸牌游戏原型。玩法参考“小丑牌”式的手牌结算循环：选择牌组成牌型，获得筹码和倍率，通过小丑牌、牌型训练和商店改造逐步构筑更高分数。
+一个像素纸牌游戏原型。玩法参考“小丑牌”式的手牌结算循环：选择牌组成牌型，获得筹码和倍率，通过小丑牌、牌型训练和商店改造逐步构筑更高分数。
 
 ## 运行方式
 
-这是一个静态前端项目，不需要安装依赖。
+安装依赖：
 
-直接用浏览器打开：
-
-```text
-index.html
+```bash
+npm install
 ```
 
-或在项目目录启动任意静态服务后访问首页。
+启动开发服务器：
+
+```bash
+npm run dev
+```
+
+默认访问 `http://127.0.0.1:5173/`。
+
+生产构建：
+
+```bash
+npm run build
+```
 
 ## 测试
 
-项目当前使用 Node 直接运行测试脚本：
+项目当前使用 TypeScript 编译核心逻辑后，再用 Node 运行测试脚本：
 
 ```bash
-node tests/core.test.js
-node tests/structure.test.js
+npm test
 ```
 
-语法检查示例：
+类型检查和 lint：
 
 ```bash
-node --check src/main.js
+npm run typecheck
+npm run lint
 ```
 
 ## 目录结构
@@ -43,12 +53,12 @@ src/
   state/          游戏状态初始化和常量
   systems/        音效、特效、噪点等系统能力
   ui/             手牌、HUD、商店、弹窗等 DOM 渲染
-  main.js         游戏流程编排和事件绑定入口
+  main.ts         游戏流程编排和事件绑定入口
 ```
 
 ## 开发约定
 
-- `src/main.js` 只做流程编排、初始化和事件绑定。
+- `src/main.ts` 只做流程编排、初始化和事件绑定。
 - 牌型规则、升级数值等纯逻辑放在 `src/core/`。
 - 商店、出牌结算等流程放在 `src/flow/`。
 - DOM 渲染放在 `src/ui/`。
