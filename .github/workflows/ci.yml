@@ -1,0 +1,46 @@
+name: CI Quality Gate
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  quality-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # 1. 运行格式化与 Lint 检查
+      - name: Run Linter & Formatter
+        run: npx biome check .
+
+      # 2. 严格类型检查
+      - name: Run Type Check
+        run: npx tsc --noEmit
+
+      # 3. 冗余代码检查
+      - name: Run Knip Check
+        run: npx knip
+
+      # 4. 架构边界与循环依赖检查
+      - name: Run Dependency Cruiser
+        run: npx depcruise src --config .dependency-cruiser.cjs
+
+      # 5. 运行原有的单元测试
+      - name: Run Tests
+        run: |
+          node tests/core.test.js
+          node tests/structure.test.js
