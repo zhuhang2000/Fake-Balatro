@@ -1,5 +1,12 @@
 /* Hand scoring flow with card, joker, card-state and score animations. */
-import type { Card, Joker, JokerEffect, ScoringFlowApi, ScoringFlowDeps } from '../types';
+import type {
+  Card,
+  Joker,
+  JokerContext,
+  JokerEffect,
+  ScoringFlowApi,
+  ScoringFlowDeps,
+} from '../types';
 
 const FALLBACK_JOKER_POINT = { x: 240, y: 140 };
 const FALLBACK_CARD_POINT = { x: 240, y: 240 };
@@ -8,6 +15,7 @@ export function createScoringFlow(deps: ScoringFlowDeps): ScoringFlowApi {
   const {
     $,
     state,
+    rng,
     MAX_PLAY,
     sleep,
     fmt,
@@ -44,7 +52,7 @@ export function createScoringFlow(deps: ScoringFlowDeps): ScoringFlowApi {
   function infectHandCard(sourceLabel: string): boolean {
     const open = state.hand.filter((card) => !card.state);
     if (!open.length) return false;
-    const card = open[Math.floor(Math.random() * open.length)];
+    const card = rng.choice(open);
     if (!card) return false;
     card.state = 'tainted';
     renderHand();
@@ -204,13 +212,13 @@ export function createScoringFlow(deps: ScoringFlowDeps): ScoringFlowApi {
         SFX.taint();
       }
       if (proc.deckCrack && state.deck.length) {
-        state.deck.splice(Math.floor(Math.random() * state.deck.length), 1);
+        state.deck.splice(rng.ri(0, state.deck.length - 1), 1);
         renderCounts();
         SFX.crack();
         shake(1);
         announcer.announce('牌堆深处传来碎裂声 -1', 'bad');
       }
-      if (proc.spreadChance && Math.random() < proc.spreadChance) {
+      if (proc.spreadChance && rng.rnd(0, 1) < proc.spreadChance) {
         if (!infectHandCard('污染扩散') && state.gold > 0) {
           state.gold -= 1;
           renderGold();
@@ -222,6 +230,8 @@ export function createScoringFlow(deps: ScoringFlowDeps): ScoringFlowApi {
     }
 
     await sleep(380);
+
+    const jokerCtx: JokerContext = { state, rng };
 
     for (const card of ev.scoring) {
       if (card.el) popEl(card.el, 'scored');
@@ -241,7 +251,7 @@ export function createScoringFlow(deps: ScoringFlowDeps): ScoringFlowApi {
       if (card.state) await stateProc(card, value);
       for (const joker of state.jokers) {
         if (joker.perCard) {
-          const effect = joker.perCard(card, ev);
+          const effect = joker.perCard(card, ev, jokerCtx);
           if (effect) await jokerProc(joker, effect);
         }
       }
@@ -250,7 +260,7 @@ export function createScoringFlow(deps: ScoringFlowDeps): ScoringFlowApi {
     const shattered: Joker[] = [];
     for (const joker of state.jokers) {
       if (joker.onHand) {
-        const effect = joker.onHand(ev, state.played);
+        const effect = joker.onHand(ev, state.played, jokerCtx);
         if (effect) {
           await jokerProc(joker, effect);
           if (effect.shatter) shattered.push(joker);

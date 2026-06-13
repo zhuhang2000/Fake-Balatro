@@ -1,7 +1,6 @@
 /* Shop state transitions, purchase actions and shelf anomalies. */
-import type { CardStateKey, Joker, ShopFlowApi, ShopFlowDeps, ShopOffer } from '../types';
-
-const STATE_KEYS: readonly CardStateKey[] = ['gilded', 'cracked', 'echo', 'tainted'];
+import { CARD_STATE_KEYS } from '../core/card-states';
+import type { Joker, ShopFlowApi, ShopFlowDeps, ShopOffer } from '../types';
 
 export function createShopFlow(deps: ShopFlowDeps): ShopFlowApi {
   const {
@@ -10,6 +9,7 @@ export function createShopFlow(deps: ShopFlowDeps): ShopFlowApi {
     shopState,
     JOKERS,
     Core,
+    rng,
     JOKER_SLOTS_CAP,
     sellPrice,
     SFX,
@@ -26,7 +26,7 @@ export function createShopFlow(deps: ShopFlowDeps): ShopFlowApi {
     renderShop,
     renderStatus,
   } = deps;
-  const { shuffle, choice, HAND_ORDER, MAX_HAND_LEVEL, getHandStats, upgradePrice } = Core;
+  const { HAND_ORDER, MAX_HAND_LEVEL, getHandStats, upgradePrice } = Core;
 
   const unowned = (): Joker[] => {
     const owned = new Set(state.jokers.map((joker) => joker.id));
@@ -34,13 +34,14 @@ export function createShopFlow(deps: ShopFlowDeps): ShopFlowApi {
   };
 
   function rollOffers(): void {
-    shopState.offers = shuffle(unowned().slice()).slice(0, 3);
+    shopState.offers = rng.shuffle(unowned().slice()).slice(0, 3);
   }
 
   function rollUpgradeOffers(): void {
-    shopState.upgradeOffers = shuffle(
-      HAND_ORDER.filter((key) => getHandStats(key, state.handLevels).level < MAX_HAND_LEVEL)
-    )
+    shopState.upgradeOffers = rng
+      .shuffle(
+        HAND_ORDER.filter((key) => getHandStats(key, state.handLevels).level < MAX_HAND_LEVEL)
+      )
       .slice(0, 2)
       .map((key) => ({ key, sold: false }));
   }
@@ -48,13 +49,13 @@ export function createShopFlow(deps: ShopFlowDeps): ShopFlowApi {
   /* Each shop visit re-rolls pricing glitches and the anomaly shelf. */
   function rollAnomalies(): void {
     shopState.discount = 1;
-    const roll = Math.random();
+    const roll = rng.rnd(0, 1);
     if (roll < 0.18) shopState.discount = 0.75;
     else if (roll < 0.3) shopState.discount = 1.25;
     shopState.mystery =
-      unowned().length > 0 && Math.random() < 0.55 ? { price: 6, sold: false } : null;
-    shopState.service = Math.random() < 0.5 ? { price: 5, sold: false } : null;
-    shopState.risk = Math.random() < 0.45 ? { price: 3, sold: false } : null;
+      unowned().length > 0 && rng.rnd(0, 1) < 0.55 ? { price: 6, sold: false } : null;
+    shopState.service = rng.rnd(0, 1) < 0.5 ? { price: 5, sold: false } : null;
+    shopState.risk = rng.rnd(0, 1) < 0.45 ? { price: 3, sold: false } : null;
     if (shopState.discount < 1) {
       SFX.event('good');
       glitchFx();
@@ -135,7 +136,11 @@ export function createShopFlow(deps: ShopFlowDeps): ShopFlowApi {
     const offer = shopState.mystery;
     const unownedJokers = unowned();
     const pool = unownedJokers.filter((joker) => !shopState.offers.includes(joker));
-    const pick = pool.length ? choice(pool) : unownedJokers.length ? choice(unownedJokers) : null;
+    const pick = pool.length
+      ? rng.choice(pool)
+      : unownedJokers.length
+        ? rng.choice(unownedJokers)
+        : null;
     if (
       !offer ||
       offer.sold ||
@@ -166,7 +171,7 @@ export function createShopFlow(deps: ShopFlowDeps): ShopFlowApi {
       return;
     }
     state.gold -= offer.price;
-    for (let i = 0; i < 3; i++) state.pendingMutations.push(choice(STATE_KEYS));
+    for (let i = 0; i < 3; i++) state.pendingMutations.push(rng.choice(CARD_STATE_KEYS));
     offer.sold = true;
     SFX.buy();
     announcer.announce('改造舱已预约：下一关 3 张牌将变异', 'weird');
@@ -185,7 +190,7 @@ export function createShopFlow(deps: ShopFlowDeps): ShopFlowApi {
     }
     state.gold -= offer.price;
     offer.sold = true;
-    if (Math.random() < 0.5) {
+    if (rng.rnd(0, 1) < 0.5) {
       state.gold += 8;
       SFX.coin();
       announcer.announce('赌局命中：金币+8', 'gold');
@@ -241,7 +246,7 @@ export function createShopFlow(deps: ShopFlowDeps): ShopFlowApi {
     SFX.discard();
     rollOffers();
     rollUpgradeOffers();
-    if (Math.random() < 0.15 && shopState.discount > 0.85) {
+    if (rng.rnd(0, 1) < 0.15 && shopState.discount > 0.85) {
       shopState.discount = 0.85;
       glitchFx();
       SFX.event('weird');

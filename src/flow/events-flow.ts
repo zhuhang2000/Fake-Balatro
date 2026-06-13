@@ -49,7 +49,7 @@ export function createEventsFlow(deps: EventsFlowDeps): EventsFlowApi {
 
   function maybeFire(trigger: EventTrigger) {
     const gate = GATES[trigger];
-    if (Math.random() >= gate) return null;
+    if (rng.rnd(0, 1) >= gate) return null;
     const ev = rollEvent(events, state, trigger, rng);
     if (!ev) return null;
     const outcome = ev.apply(state, rng);
