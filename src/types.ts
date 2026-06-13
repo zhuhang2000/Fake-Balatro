@@ -287,3 +287,83 @@ export interface GrainDeps {
 export interface GrainApi {
   makeGrain(): void;
 }
+export type AnnouncerTone = 'sys' | 'good' | 'bad' | 'weird' | 'gold';
+
+export interface AnnouncerDeps {
+  $: DomQuery;
+}
+
+export interface AnnouncerApi {
+  announce(text: string, tone?: AnnouncerTone, hold?: number): void;
+  splash(title: string, tone?: AnnouncerTone): void;
+}
+
+export interface EventsFlowDeps {
+  state: GameState;
+  events: readonly ChaosEvent[];
+  rollEvent(
+    events: readonly ChaosEvent[],
+    state: GameState,
+    trigger: EventTrigger,
+    rng: EventRng
+  ): ChaosEvent | null;
+  rng: EventRng;
+  announcer: AnnouncerApi;
+  SFX: SfxApi;
+  flash(color?: string): void;
+  shake(level?: number): void;
+  glitchFx(): void;
+  renderCounts(): void;
+  renderGold(): void;
+  renderHand(): void;
+  renderStatus?: () => void;
+}
+
+export interface EventsFlowApi {
+  maybeFire(trigger: EventTrigger): ChaosEvent | null;
+}
+export interface HudViewDeps {
+  $: DomQuery;
+  state: GameState;
+  fmt: NumberFormatter;
+}
+
+export interface HudViewApi {
+  renderButtons(): void;
+  renderCounts(): void;
+  renderGold(): void;
+  renderScore(): void;
+}
+
+export interface ReadoutViewDeps {
+  $: DomQuery;
+  state: GameState;
+  fmt: NumberFormatter;
+  chipVal(rank: Rank): number;
+  evaluateHand(cards: Card[], levels: HandLevels): HandEval;
+  previewStateChips?(card: Card, baseChips: number): number;
+  popEl(el: Element, className?: string): void;
+  renderButtons(): void;
+}
+
+export interface ReadoutViewApi {
+  resetReadout(): void;
+  updatePreview(): void;
+}
+
+export interface ModalsViewDeps {
+  $: DomQuery;
+  state: GameState;
+  HAND_ORDER: readonly HandTypeKey[];
+  getHandStats(key: HandTypeKey, levels: HandLevels): HandStats;
+  CARD_STATES: Record<CardStateKey, CardStateMeta>;
+}
+
+export interface ModalsViewApi {
+  buildHandTable(): void;
+  buildStatesModal(): void;
+  hideModal(selector: string): void;
+  hideModals(): void;
+  renderStatus(): void;
+  showModal(selector: string): void;
+}
