@@ -25,11 +25,11 @@ import { createVisuals } from './systems/fx';
 import { createGrain } from './systems/grain';
 import type {
   Card,
-  CardsViewHandlers,
-  EventRng,
   EventTrigger,
+  GameRng,
   GameState,
   Joker,
+  ShopFlowApi,
   ShopState,
   ShopViewHandlers,
 } from './types';
@@ -51,7 +51,7 @@ const {
   ri,
   choice,
   fmt,
-  shuffle,
+  createRng,
   SUIT_ORDER,
   rankName,
   chipVal,
@@ -73,7 +73,7 @@ const {
   sprinkleCountFor,
 } = Core;
 
-const rng: EventRng = { rnd, ri, choice };
+const rng: GameRng = createRng();
 
 const { FX, elCenter, floatText, popEl, shake, flash, glitchFx, animateNumber } = createVisuals({
   $,
@@ -87,7 +87,21 @@ const { FX, elCenter, floatText, popEl, shake, flash, glitchFx, animateNumber } 
 const state: GameState = createInitialState();
 const JOKERS: Joker[] = createJokers(() => state);
 const shopState: ShopState = createShopState();
-const shopHandlers = {} as CardsViewHandlers & ShopViewHandlers;
+
+/* Views need shop actions, but the shop flow is created later (it depends on
+   views). Rather than assert an empty object into the right shape, expose
+   stable delegators that forward to the flow once it exists. */
+let shopFlow: ShopFlowApi | null = null;
+const shopHandlers: ShopViewHandlers = {
+  sellJoker: (joker) => shopFlow?.sellJoker(joker),
+  effPrice: (price) => (shopFlow ? shopFlow.effPrice(price) : price),
+  buyJoker: (joker) => shopFlow?.buyJoker(joker),
+  buyUpgrade: (offer) => shopFlow?.buyUpgrade(offer),
+  buyMystery: () => shopFlow?.buyMystery(),
+  buyService: () => shopFlow?.buyService(),
+  buyRisk: () => shopFlow?.buyRisk(),
+  buySlot: (price) => shopFlow?.buySlot(price),
+};
 
 const announcer = createAnnouncer({ $ });
 const cardsView = createCardsView({
@@ -143,6 +157,7 @@ const eventsFlow = createEventsFlow({
 const scoringFlow = createScoringFlow({
   $,
   state,
+  rng,
   MAX_PLAY,
   sleep,
   fmt,
@@ -195,7 +210,7 @@ function startLevel(): void {
   state.score = 0;
   state.handsLeft = HANDS_PER;
   state.discardsLeft = DISCARDS_PER;
-  state.deck = shuffle(makeDeck());
+  state.deck = rng.shuffle(makeDeck());
   sprinkleStates(state.deck, sprinkleCountFor(state.level, rng), rng, state.pendingMutations);
   state.hand = [];
   state.played = [];
@@ -356,12 +371,13 @@ const shopView = createShopView({
   renderGold,
 });
 const { renderShop } = shopView;
-const shopFlow = createShopFlow({
+shopFlow = createShopFlow({
   $,
   state,
   shopState,
   JOKERS,
   Core,
+  rng,
   JOKER_SLOTS_CAP,
   sellPrice,
   SFX,
@@ -378,7 +394,6 @@ const shopFlow = createShopFlow({
   renderShop,
   renderStatus,
 });
-Object.assign(shopHandlers, shopFlow);
 const { openShop, rerollShop } = shopFlow;
 
 function nextLevel(): void {
