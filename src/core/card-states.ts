@@ -39,6 +39,11 @@ const PROCS: Record<CardStateKey, CardStateProc> = {
   tainted: { chips: 0, gold: 0, mult: 4, echo: false, deckCrack: false, spreadChance: 0.25 },
 };
 
+/* Single source of truth for the set of states and their display names, so
+   shop/events never hard-code their own key list or name table. */
+export const CARD_STATE_KEYS = Object.keys(CARD_STATES) as CardStateKey[];
+export const cardStateName = (key: CardStateKey): string => CARD_STATES[key].name;
+
 export const stateScoreProc = (key: CardStateKey): CardStateProc => PROCS[key];
 
 /* Deterministic chip delta a stated card adds on scoring (for previews). */
