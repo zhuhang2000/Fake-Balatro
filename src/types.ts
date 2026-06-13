@@ -17,11 +17,31 @@ export type GamePhase = 'boot' | 'play' | 'scoring' | 'cleared' | 'shop' | 'vict
 export type SortMode = 'rank' | 'suit';
 export type HandLevels = Record<HandTypeKey, number>;
 
+export type CardStateKey = 'gilded' | 'cracked' | 'echo' | 'tainted';
+
+export interface CardStateMeta {
+  key: CardStateKey;
+  name: string;
+  badge: string;
+  desc: string;
+  color: string;
+}
+
+export interface CardStateProc {
+  chips: number;
+  gold: number;
+  mult: number;
+  echo: boolean;
+  deckCrack: boolean;
+  spreadChance: number;
+}
+
 export interface Card {
   id: number;
   suit: Suit;
   color: CardColor;
   rank: Rank;
+  state?: CardStateKey | null;
   sel?: boolean;
   el?: HTMLElement;
 }
@@ -56,6 +76,8 @@ export interface JokerEffect {
   xmult?: number;
   gold?: number;
   glitch?: boolean;
+  shatter?: boolean;
+  infect?: boolean;
 }
 
 export type JokerPattern = 'stripe' | 'check' | 'none';
@@ -97,9 +119,24 @@ export interface ShopOffer {
   sold: boolean;
 }
 
+export interface ShopAnomaly {
+  price: number;
+  sold: boolean;
+}
+
 export interface ShopState {
   offers: Joker[];
   upgradeOffers: ShopOffer[];
+  discount: number;
+  mystery: ShopAnomaly | null;
+  service: ShopAnomaly | null;
+  risk: ShopAnomaly | null;
+}
+
+export interface LevelMods {
+  suitBoost: { suit: Suit; chips: number } | null;
+  nextHandMult: number;
+  nextHandXMult: number;
 }
 
 export interface GameState {
@@ -119,4 +156,37 @@ export interface GameState {
   phase: GamePhase;
   sort: SortMode;
   endless: boolean;
+  mods: LevelMods;
+  pendingMutations: CardStateKey[];
+  cleared: boolean;
+  eventLog: EventLogEntry[];
+}
+
+export interface EventLogEntry {
+  name: string;
+  kind: EventKind;
+  lines: string[];
+}
+
+export type EventKind = 'good' | 'bad' | 'mixed' | 'risk';
+export type EventTrigger = 'levelStart' | 'afterScore';
+
+export interface EventRng {
+  rnd(a: number, b: number): number;
+  ri(a: number, b: number): number;
+  choice<T>(items: readonly T[]): T;
+}
+
+export interface EventOutcome {
+  lines: string[];
+}
+
+export interface ChaosEvent {
+  id: string;
+  name: string;
+  kind: EventKind;
+  weight: number;
+  trigger: EventTrigger;
+  canFire(state: GameState): boolean;
+  apply(state: GameState, rng: EventRng): EventOutcome;
 }
