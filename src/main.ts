@@ -21,12 +21,21 @@ import { createAnnouncer } from './systems/announcer';
 import { SFX, Snd } from './systems/audio';
 import { createVisuals } from './systems/fx';
 import { createGrain } from './systems/grain';
-import type { Card, EventRng, EventTrigger, GameState, Joker, ShopState } from './types';
+import type {
+  Card,
+  CardsViewHandlers,
+  EventRng,
+  EventTrigger,
+  GameState,
+  Joker,
+  ShopState,
+  ShopViewHandlers,
+} from './types';
+import { createCardsView } from './ui/cards-view';
 import { createHudView } from './ui/hud-view';
 import { createModalsView } from './ui/modals-view';
 import { createReadoutView } from './ui/readout-view';
-import './ui/shop-view.js';
-import './ui/cards-view.js';
+import { createShopView } from './ui/shop-view';
 import './flow/shop-flow.js';
 import './flow/scoring-flow.js';
 
@@ -66,15 +75,6 @@ const {
 
 const rng: EventRng = { rnd, ri, choice };
 
-type CardsViewApi = {
-  renderHand(fresh?: Card[]): void;
-  renderJokers(): void;
-  renderPlayed(): void;
-  sortHand(): void;
-};
-type ShopViewApi = {
-  renderShop(): void;
-};
 type ShopFlowApi = {
   openShop(base: number, bonus: number, skipBonus: number, interest: number): void;
   rerollShop(): void;
@@ -84,10 +84,8 @@ type ScoringFlowApi = {
   playHand(): Promise<void>;
 };
 type RuntimeRoot = typeof globalThis & {
-  JokerCardsView: { createCardsView(deps: unknown): CardsViewApi };
   JokerScoringFlow: { createScoringFlow(deps: unknown): ScoringFlowApi };
   JokerShopFlow: { createShopFlow(deps: unknown): ShopFlowApi };
-  JokerShopView: { createShopView(deps: unknown): ShopViewApi };
 };
 const runtime = globalThis as RuntimeRoot;
 const { FX, elCenter, floatText, popEl, shake, flash, glitchFx, animateNumber } = createVisuals({
@@ -102,10 +100,10 @@ const { FX, elCenter, floatText, popEl, shake, flash, glitchFx, animateNumber } 
 const state: GameState = createInitialState();
 const JOKERS: Joker[] = createJokers(() => state);
 const shopState: ShopState = createShopState();
-const shopHandlers: Record<string, unknown> = {};
+const shopHandlers = {} as CardsViewHandlers & ShopViewHandlers;
 
 const announcer = createAnnouncer({ $ });
-const cardsView = runtime.JokerCardsView.createCardsView({
+const cardsView = createCardsView({
   $,
   state,
   SUIT_ORDER,
@@ -355,7 +353,7 @@ async function settleLevel(skipped: boolean): Promise<void> {
   openShop(base, handsBonus, skipBonus, interest);
 }
 
-const shopView = runtime.JokerShopView.createShopView({
+const shopView = createShopView({
   $,
   state,
   shopState,
