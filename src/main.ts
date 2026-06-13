@@ -1,4 +1,5 @@
 import * as Core from './core';
+import { EVENTS, rollEvent } from './data/events';
 import { createJokers, drawJokerIcon } from './data/jokers';
 import {
   DISCARDS_PER,
@@ -9,12 +10,13 @@ import {
   MAX_PLAY,
   createInitialState,
   createShopState,
+  resetLevelMods,
   sellPrice,
 } from './state/game-state';
 /* ═══════════════════════════════════════════════════════════
    小丑终端 JOKER.SYS — 游戏流程入口
    ═══════════════════════════════════════════════════════════ */
-import type { Card, GameState, Joker, ShopState } from './types';
+import type { Card, EventRng, GameState, Joker, ShopState } from './types';
 
 import './systems/audio.js';
 import './systems/fx.js';
@@ -24,6 +26,8 @@ import './ui/hud-view.js';
 import './ui/readout-view.js';
 import './ui/modals-view.js';
 import './systems/grain.js';
+import './systems/announcer.js';
+import './flow/events-flow.js';
 import './flow/shop-flow.js';
 import './flow/scoring-flow.js';
 
@@ -53,21 +57,38 @@ const {
   upgradePrice,
   evaluateHand,
   targetFor,
+  cumulativeTargetFor,
+  CARD_STATES,
+  stateScoreProc,
+  previewStateChips,
+  sprinkleStates,
+  sprinkleCountFor,
 } = Core;
+
+const rng: EventRng = { rnd, ri, choice };
 
 type SfxApi = {
   bigmult(): void;
+  breakthrough(): void;
   buy(): void;
   coin(): void;
+  crack(): void;
   deny(): void;
   discard(): void;
   draw(index?: number): void;
+  echo(index?: number): void;
+  edge(): void;
+  event(kind: string): void;
+  gild(): void;
   joker(index?: number): void;
   lose(): void;
   mult(): void;
+  overkill(): void;
   play(): void;
   select(on: boolean): void;
   settle(): void;
+  shatter(): void;
+  taint(): void;
   tick(index?: number): void;
   win(): void;
 };
@@ -115,8 +136,10 @@ type ReadoutViewApi = {
 };
 type ModalsViewApi = {
   buildHandTable(): void;
+  buildStatesModal(): void;
   hideModal(selector: string): void;
   hideModals(): void;
+  renderStatus(): void;
   showModal(selector: string): void;
 };
 type GrainApi = {
@@ -126,16 +149,25 @@ type ShopViewApi = {
   renderShop(): void;
 };
 type ShopFlowApi = {
-  openShop(base: number, bonus: number, interest: number): void;
+  openShop(base: number, bonus: number, skipBonus: number, interest: number): void;
   rerollShop(): void;
   [key: string]: unknown;
 };
 type ScoringFlowApi = {
   playHand(): Promise<void>;
 };
+type AnnouncerApi = {
+  announce(text: string, tone?: string, hold?: number): void;
+  splash(title: string, tone?: string): void;
+};
+type EventsFlowApi = {
+  maybeFire(trigger: string): unknown;
+};
 type RuntimeRoot = typeof globalThis & {
+  JokerAnnouncer: { createAnnouncer(deps: unknown): AnnouncerApi };
   JokerAudio: { Snd: SoundApi; SFX: SfxApi };
   JokerCardsView: { createCardsView(deps: unknown): CardsViewApi };
+  JokerEventsFlow: { createEventsFlow(deps: unknown): EventsFlowApi };
   JokerGrain: { createGrain(deps: unknown): GrainApi };
   JokerHudView: { createHudView(deps: unknown): HudViewApi };
   JokerModalsView: { createModalsView(deps: unknown): ModalsViewApi };
@@ -155,6 +187,7 @@ const JOKERS: Joker[] = createJokers(() => state);
 const shopState: ShopState = createShopState();
 const shopHandlers: Record<string, unknown> = {};
 
+const announcer = runtime.JokerAnnouncer.createAnnouncer({ $ });
 const cardsView = runtime.JokerCardsView.createCardsView({
   $,
   state,
@@ -162,6 +195,7 @@ const cardsView = runtime.JokerCardsView.createCardsView({
   rankName,
   drawJokerIcon,
   sellPrice,
+  CARD_STATES,
   handlers: shopHandlers,
 });
 const { sortHand, renderHand, renderPlayed, renderJokers } = cardsView;
@@ -173,14 +207,37 @@ const readoutView = runtime.JokerReadoutView.createReadoutView({
   fmt,
   chipVal,
   evaluateHand,
+  previewStateChips,
   popEl,
   renderButtons,
 });
 const { resetReadout, updatePreview } = readoutView;
-const modalsView = runtime.JokerModalsView.createModalsView({ $, state, HAND_ORDER, getHandStats });
-const { showModal, hideModal, hideModals, buildHandTable } = modalsView;
+const modalsView = runtime.JokerModalsView.createModalsView({
+  $,
+  state,
+  HAND_ORDER,
+  getHandStats,
+  CARD_STATES,
+});
+const { showModal, hideModal, hideModals, buildHandTable, renderStatus, buildStatesModal } =
+  modalsView;
 const grain = runtime.JokerGrain.createGrain({ $ });
 const { makeGrain } = grain;
+const eventsFlow = runtime.JokerEventsFlow.createEventsFlow({
+  state,
+  events: EVENTS,
+  rollEvent,
+  rng,
+  announcer,
+  SFX,
+  flash,
+  shake,
+  glitchFx,
+  renderCounts,
+  renderGold,
+  renderHand,
+  renderStatus,
+});
 const scoringFlow = runtime.JokerScoringFlow.createScoringFlow({
   $,
   state,
@@ -189,6 +246,8 @@ const scoringFlow = runtime.JokerScoringFlow.createScoringFlow({
   fmt,
   chipVal,
   evaluateHand,
+  stateScoreProc,
+  CARD_STATES,
   SFX,
   FX,
   elCenter,
@@ -198,14 +257,19 @@ const scoringFlow = runtime.JokerScoringFlow.createScoringFlow({
   flash,
   glitchFx,
   animateNumber,
+  announcer,
+  maybeFireEvent: (trigger: string) => eventsFlow.maybeFire(trigger),
   renderButtons,
   renderCounts,
   renderGold,
   renderHand,
   renderPlayed,
+  renderJokers,
   resetReadout,
+  renderStatus,
   drawTo,
-  levelClear,
+  refreshCleared,
+  settleLevel,
   gameOver,
 });
 const { playHand } = scoringFlow;
@@ -218,27 +282,41 @@ function startRun(): void {
   state.maxJokers = JOKER_SLOTS_BASE;
   state.handLevels = initHandLevels();
   state.total = 0;
+  state.pendingMutations = [];
   buildHandTable();
   hideModals();
   startLevel();
 }
 
 function startLevel(): void {
-  state.target = targetFor(state.level);
+  state.target = cumulativeTargetFor(state.level);
   state.score = 0;
   state.handsLeft = HANDS_PER;
   state.discardsLeft = DISCARDS_PER;
   state.deck = shuffle(makeDeck());
+  sprinkleStates(state.deck, sprinkleCountFor(state.level, rng), rng, state.pendingMutations);
   state.hand = [];
   state.played = [];
   state.phase = 'play';
+  state.cleared = false;
+  state.eventLog = [];
+  resetLevelMods(state);
   renderJokers();
   renderGold();
   renderScore();
+  renderStatus();
   $('#playArea').innerHTML = '';
   resetReadout();
   drawTo();
   renderButtons();
+  /* Score banked from earlier levels may already clear this one's threshold. */
+  refreshCleared();
+  window.setTimeout(() => {
+    if (state.phase === 'play') {
+      eventsFlow.maybeFire('levelStart');
+      refreshCleared();
+    }
+  }, 700);
 }
 
 function drawTo(): void {
@@ -289,27 +367,75 @@ async function discardSel(): Promise<void> {
   updatePreview();
 }
 
-async function levelClear(): Promise<void> {
+/* Fired once when the cumulative score first reaches this level's threshold. */
+function onLevelCleared(): void {
+  renderStatus();
+  renderButtons();
+  if (state.handsLeft > 0) {
+    announcer.announce('累计得分已达标：可继续冲分，或点「结算进店」跳关换金币', 'good');
+  }
+}
+
+/* Source of truth for the cleared flag: cleared once cumulative total reaches
+   the running target. Banked score can pre-clear a level; a target-raising
+   event can revert it while the level is still live. */
+function refreshCleared(): void {
+  const nowClear = state.total >= state.target;
+  if (nowClear && !state.cleared) {
+    state.cleared = true;
+    onLevelCleared();
+  } else if (!nowClear && state.cleared && state.phase === 'play') {
+    state.cleared = false;
+    renderStatus();
+    renderButtons();
+  }
+}
+
+/* Settle the cleared level and open the shop. `skipped` is true when the
+   player ends early with hands still in reserve (extra gold reward). */
+async function settleLevel(skipped: boolean): Promise<void> {
+  if (state.phase !== 'play' && state.phase !== 'scoring') return;
   state.phase = 'cleared';
   renderButtons();
-  SFX.win();
-  FX.confetti();
-  flash('rgba(93,255,143,.25)');
-  shake(2);
   const hn = $('#handName');
-  hn.textContent = '目 标 达 成 ！';
+  const ratio = state.total / state.target;
+  if (ratio >= 2) {
+    hn.textContent = '过 载 通 关 ！';
+    SFX.overkill();
+    FX.confetti();
+    FX.confetti();
+    flash('rgba(255,210,63,.32)');
+    shake(3);
+    glitchFx();
+    announcer.announce(`输出 ${Math.floor(ratio * 100)}%：评分核心冒烟`, 'gold');
+  } else if (state.total - state.target <= state.target * 0.06) {
+    hn.textContent = '压 线 通 过';
+    SFX.win();
+    SFX.edge();
+    FX.confetti();
+    flash('rgba(93,255,143,.25)');
+    shake(2);
+    announcer.announce('擦着目标线滑入 系统假装没看见', 'good');
+  } else {
+    hn.textContent = '目 标 达 成 ！';
+    SFX.win();
+    FX.confetti();
+    flash('rgba(93,255,143,.25)');
+    shake(2);
+  }
   popEl(hn, 'big');
   const base = 4;
-  const bonus = state.handsLeft;
+  const handsBonus = state.handsLeft * 2;
+  const skipBonus = skipped && state.handsLeft > 0 ? 3 : 0;
   const interest = Math.min(5, Math.floor(state.gold / 5));
   await sleep(1000);
-  state.gold += base + bonus + interest;
+  state.gold += base + handsBonus + skipBonus + interest;
   renderGold();
   popEl($('#goldVal'));
   const p = elCenter($('#goldVal'));
   FX.coins(p.x, p.y, 12);
   SFX.coin();
-  openShop(base, bonus, interest);
+  openShop(base, handsBonus, skipBonus, interest);
 }
 
 const shopView = runtime.JokerShopView.createShopView({
@@ -341,11 +467,14 @@ const shopFlow = runtime.JokerShopFlow.createShopFlow({
   elCenter,
   floatText,
   popEl,
+  glitchFx,
+  announcer,
   renderGold,
   renderJokers,
   buildHandTable,
   showModal,
   renderShop,
+  renderStatus,
 });
 Object.assign(shopHandlers, shopFlow);
 const { openShop, rerollShop } = shopFlow;
@@ -371,8 +500,8 @@ async function gameOver(): Promise<void> {
   flash('rgba(255,64,64,.35)');
   shake(3);
   $('#overStats').innerHTML =
-    `止步于 第 ${state.level} 关<br>本关得分 ${fmt(state.score)} ／ 目标 ${fmt(state.target)}` +
-    `<br>本局累计得分 <b class="goodtxt">${fmt(state.total)}</b><br>小丑们收起了笑容。`;
+    `止步于 第 ${state.level} 关<br>累计得分 <b class="goodtxt">${fmt(state.total)}</b> ／ 目标 ${fmt(state.target)}` +
+    `<br>本关贡献 ${fmt(state.score)}<br>小丑们收起了笑容。`;
   await sleep(900);
   showModal('#gameover');
 }
@@ -383,6 +512,7 @@ function init(): void {
   buildHandTable();
   resetReadout();
   renderJokers();
+  renderStatus();
 
   $('#handArea').addEventListener('click', (event) => {
     const target = event.target as Element | null;
@@ -422,6 +552,23 @@ function init(): void {
   $('#btnCloseHelp').addEventListener('click', () => {
     SFX.select(false);
     hideModal('#help');
+  });
+  $('#btnStates').addEventListener('click', () => {
+    SFX.select(true);
+    buildStatesModal();
+    showModal('#states');
+  });
+  $('#btnCloseStates').addEventListener('click', () => {
+    SFX.select(false);
+    hideModal('#states');
+  });
+  $('#btnSettle').addEventListener('click', () => {
+    if (state.phase !== 'play' || !state.cleared) {
+      SFX.deny();
+      return;
+    }
+    SFX.coin();
+    void settleLevel(true);
   });
   $('#btnReroll').addEventListener('click', rerollShop);
   $('#btnNext').addEventListener('click', () => {

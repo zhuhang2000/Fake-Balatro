@@ -1,4 +1,4 @@
-/* Hand scoring flow with card, joker and score animations. */
+/* Hand scoring flow with card, joker, card-state and score animations. */
 ((root) => {
   function createScoringFlow(deps) {
     const {
@@ -9,6 +9,8 @@
       fmt,
       chipVal,
       evaluateHand,
+      stateScoreProc,
+      CARD_STATES,
       SFX,
       FX,
       elCenter,
@@ -18,16 +20,39 @@
       flash,
       glitchFx,
       animateNumber,
+      announcer,
+      maybeFireEvent,
       renderButtons,
       renderCounts,
       renderGold,
       renderHand,
       renderPlayed,
+      renderJokers,
       resetReadout,
+      renderStatus,
       drawTo,
-      levelClear,
+      refreshCleared,
+      settleLevel,
       gameOver,
     } = deps;
+
+    /* Turn a state-less hand card tainted; returns true when one was infected. */
+    function infectHandCard(sourceLabel) {
+      const open = state.hand.filter((c) => !c.state);
+      if (!open.length) return false;
+      const card = open[(Math.random() * open.length) | 0];
+      card.state = 'tainted';
+      renderHand();
+      if (card.el) {
+        popEl(card.el, 'stflash');
+        const p = elCenter(card.el);
+        floatText(p.x, p.y - 30, '污染!', 'f-state');
+        FX.sparks(p.x, p.y, '#a96bff', 10, 4);
+      }
+      SFX.taint();
+      announcer.announce(`${sourceLabel}：一张手牌被污染`, 'weird');
+      return true;
+    }
 
     async function playHand() {
       if (state.phase !== 'play') return;
@@ -72,6 +97,28 @@
       setM();
       $('#totalDisp').textContent = '';
 
+      /* consume one-shot mult anomalies injected by chaos events */
+      const mods = state.mods;
+      if (mods.nextHandMult) {
+        mult += mods.nextHandMult;
+        setM();
+        const p = elCenter($('#multDisp'));
+        floatText(p.x, p.y - 22, `异常 +${mods.nextHandMult} 倍`, 'f-mult');
+        announcer.announce(`倍率异常注入 +${mods.nextHandMult}`, 'weird');
+        SFX.taint();
+        mods.nextHandMult = 0;
+      }
+      if (mods.nextHandXMult !== 1) {
+        mult = Math.max(1, Math.round(mult * mods.nextHandXMult));
+        setM();
+        glitchFx();
+        const p = elCenter($('#multDisp'));
+        floatText(p.x, p.y - 22, `×${mods.nextHandXMult} 异常`, 'f-mult');
+        announcer.announce('倍率欠压生效', 'bad');
+        mods.nextHandXMult = 1;
+      }
+      if (renderStatus) renderStatus();
+
       async function jokerProc(j, e) {
         if (j.el) popEl(j.el, 'jtrig');
         SFX.joker(combo++);
@@ -89,7 +136,7 @@
           FX.sparks(p.x, p.y, '#ff3b77', 8, 4);
         }
         if (e.xmult) {
-          mult *= e.xmult;
+          mult = Math.round(mult * e.xmult);
           setM();
           floatText(p.x, p.y + 6, '×' + e.xmult + '!', 'f-mult f-big');
           SFX.bigmult();
@@ -106,7 +153,63 @@
           SFX.coin();
           FX.coins(p.x, p.y, 6);
         }
+        if (e.infect) {
+          floatText(p.x, p.y + 6, '扩散!', 'f-state');
+          infectHandCard(j.name);
+        }
         await sleep(290);
+      }
+
+      /* special card-state proc: distinct rhythm from joker beats */
+      async function stateProc(c, baseVal) {
+        const proc = stateScoreProc(c.state);
+        const meta = CARD_STATES[c.state];
+        if (c.el) popEl(c.el, 'stflash');
+        const p = c.el ? elCenter(c.el) : { x: 240, y: 240 };
+        if (proc.chips) {
+          chips += proc.chips;
+          setC();
+          floatText(p.x, p.y - 50, `${meta.name} +${proc.chips}`, 'f-chips');
+          FX.sparks(p.x, p.y, meta.color, 10, 5);
+        }
+        if (proc.echo) {
+          await sleep(130);
+          chips += baseVal;
+          setC();
+          floatText(p.x, p.y - 50, `回声 +${baseVal}`, 'f-state');
+          SFX.echo(combo++);
+          FX.sparks(p.x, p.y, meta.color, 8, 4);
+        }
+        if (proc.gold) {
+          state.gold += proc.gold;
+          renderGold();
+          popEl($('#goldVal'));
+          floatText(p.x, p.y - 50, `镀金 +${proc.gold} 金`, 'f-gold');
+          SFX.gild();
+          FX.coins(p.x, p.y, 5);
+        }
+        if (proc.mult) {
+          mult += proc.mult;
+          setM();
+          floatText(p.x, p.y - 50, `污染 +${proc.mult} 倍`, 'f-mult');
+          SFX.taint();
+        }
+        if (proc.deckCrack && state.deck.length) {
+          state.deck.splice((Math.random() * state.deck.length) | 0, 1);
+          renderCounts();
+          SFX.crack();
+          shake(1);
+          announcer.announce('牌堆深处传来碎裂声 -1', 'bad');
+        }
+        if (proc.spreadChance && Math.random() < proc.spreadChance) {
+          if (!infectHandCard('污染扩散') && state.gold > 0) {
+            state.gold -= 1;
+            renderGold();
+            floatText(p.x, p.y - 50, '-1 金', 'f-gold');
+            announcer.announce('污染渗入投币口 金币-1', 'bad');
+          }
+        }
+        await sleep(150);
       }
 
       await sleep(380);
@@ -119,7 +222,14 @@
         const p = elCenter(c.el);
         floatText(p.x, p.y - 34, '+' + v, 'f-chips');
         SFX.tick(combo++);
+        if (mods.suitBoost && c.suit === mods.suitBoost.suit) {
+          chips += mods.suitBoost.chips;
+          setC();
+          floatText(p.x, p.y - 54, `过热 +${mods.suitBoost.chips}`, 'f-chips');
+          FX.sparks(p.x, p.y, '#ff9d3b', 7, 4);
+        }
         await sleep(170);
+        if (c.state) await stateProc(c, v);
         for (const j of state.jokers) {
           if (j.perCard) {
             const e = j.perCard(c, ev);
@@ -128,11 +238,29 @@
         }
       }
 
+      const shattered = [];
       for (const j of state.jokers) {
         if (j.onHand) {
           const e = j.onHand(ev, state.played);
-          if (e) await jokerProc(j, e);
+          if (e) {
+            await jokerProc(j, e);
+            if (e.shatter) shattered.push(j);
+          }
         }
+      }
+      for (const j of shattered) {
+        const idx = state.jokers.indexOf(j);
+        if (idx < 0) continue;
+        const p = j.el ? elCenter(j.el) : { x: 240, y: 140 };
+        state.jokers.splice(idx, 1);
+        SFX.shatter();
+        glitchFx();
+        shake(2);
+        FX.sparks(p.x, p.y, '#e4f0f8', 22, 6);
+        floatText(p.x, p.y, '碎裂!', 'f-mult f-big');
+        announcer.announce(`${j.name} 当场碎裂`, 'bad');
+        renderJokers();
+        await sleep(260);
       }
       await sleep(200);
 
@@ -149,9 +277,11 @@
       flash('rgba(255,210,63,.22)');
       const pc = elCenter(td);
       FX.sparks(pc.x, pc.y, '#ffd23f', 26, 7);
+      if (heavy === 3) glitchFx();
 
       const before = state.score;
       const beforeTotal = state.total;
+      const wasCleared = state.cleared;
       state.score += total;
       state.total += total;
       await sleep(240);
@@ -162,20 +292,43 @@
       popEl($('#roundScore'));
       popEl($('#totalScore'));
 
+      /* breakthrough beat: the moment cumulative score crosses the target */
+      if (!wasCleared && state.total >= state.target) {
+        SFX.breakthrough();
+        flash('rgba(255,255,255,.45)');
+        glitchFx();
+        shake(3);
+        announcer.splash('目标突破', 'gold');
+        const ps = elCenter($('#totalScore'));
+        FX.sparks(ps.x, ps.y, '#5dff8f', 30, 8);
+        await sleep(420);
+        refreshCleared();
+      }
+
       state.played.forEach((c) => c.el.classList.add('out'));
       await sleep(330);
       state.played = [];
       renderPlayed();
       resetReadout();
 
-      if (state.score >= state.target) {
-        await levelClear();
+      /* Once cleared the level can never be lost: keep playing for cumulative
+         score, or auto-settle into the shop when the last hand is spent. */
+      if (state.cleared) {
+        if (state.handsLeft <= 0) {
+          await settleLevel(false);
+          return;
+        }
+        maybeFireEvent('afterScore');
+        drawTo();
+        state.phase = 'play';
+        renderButtons();
         return;
       }
       if (state.handsLeft <= 0) {
         await gameOver();
         return;
       }
+      maybeFireEvent('afterScore');
       drawTo();
       state.phase = 'play';
       renderButtons();
