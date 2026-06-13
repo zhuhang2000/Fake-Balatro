@@ -56,7 +56,8 @@ export function createJokers(getState: () => GameState): Joker[] {
         eye: 'mixed',
         mouth: 'wave',
       },
-      onHand: () => (Math.random() < 0.5 ? { xmult: 2, glitch: true } : { mult: 1 }),
+      onHand: (_ev, _played, ctx) =>
+        ctx.rng.rnd(0, 1) < 0.5 ? { xmult: 2, glitch: true } : { mult: 1 },
     },
     {
       id: 'counter',
@@ -227,8 +228,8 @@ export function createJokers(getState: () => GameState): Joker[] {
         mouth: 'gasp',
         mark: 'crown',
       },
-      onHand: () =>
-        Math.random() < 0.25 ? { xmult: 3, shatter: true } : { xmult: 3, glitch: true },
+      onHand: (_ev, _played, ctx) =>
+        ctx.rng.rnd(0, 1) < 0.25 ? { xmult: 3, shatter: true } : { xmult: 3, glitch: true },
     },
     {
       id: 'goldtongue',
@@ -258,7 +259,7 @@ export function createJokers(getState: () => GameState): Joker[] {
         mouth: 'zigzag',
         mark: 'tear',
       },
-      onHand: () => (Math.random() < 0.35 ? { infect: true } : null),
+      onHand: (_ev, _played, ctx) => (ctx.rng.rnd(0, 1) < 0.35 ? { infect: true } : null),
     },
   ];
 }

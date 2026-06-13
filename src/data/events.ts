@@ -1,7 +1,7 @@
 /* JOKER.SYS chaos event pool: weighted in-run random events. */
+import { CARD_STATE_KEYS, cardStateName } from '../core/card-states';
 import type {
   Card,
-  CardStateKey,
   ChaosEvent,
   EventOutcome,
   EventRng,
@@ -11,13 +11,6 @@ import type {
 } from '../types';
 
 const SUITS: readonly Suit[] = ['♠', '♥', '♦', '♣'];
-const STATE_KEYS: readonly CardStateKey[] = ['gilded', 'cracked', 'echo', 'tainted'];
-const STATE_NAMES: Record<CardStateKey, string> = {
-  gilded: '镀金',
-  cracked: '裂纹',
-  echo: '回声',
-  tainted: '污染',
-};
 
 const roundTarget = (n: number): number => Math.max(10, Math.round(n / 10) * 10);
 const statelessHand = (state: GameState): Card[] => state.hand.filter((card) => !card.state);
@@ -30,9 +23,9 @@ function mutateHandCards(state: GameState, rng: EventRng, count: number): string
     const open = statelessHand(state);
     if (!open.length) break;
     const card = rng.choice(open);
-    const key = rng.choice(STATE_KEYS);
+    const key = rng.choice(CARD_STATE_KEYS);
     card.state = key;
-    lines.push(`${cardLabel(card)} 被注入【${STATE_NAMES[key]}】`);
+    lines.push(`${cardLabel(card)} 被注入【${cardStateName(key)}】`);
   }
   return lines;
 }
