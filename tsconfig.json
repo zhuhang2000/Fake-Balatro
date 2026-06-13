@@ -19,14 +19,14 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
 
     /* 兼容性与构建设置 */
-    "allowJs": true,
-    "checkJs": false,
-    "maxNodeModuleJsDepth": 1,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "noEmit": true
   },
-  "include": ["src/**/*", "tests/**/*"]
+  "include": ["src/**/*"]
 }

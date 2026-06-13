@@ -7,7 +7,8 @@ export function createCardsView(deps: CardsViewDeps): CardsViewApi {
     const d = document.createElement('div');
     d.className = 'card ' + card.color + (card.sel ? ' sel' : '');
     if (card.state) d.classList.add('st-' + card.state);
-    d.dataset.id = String(card.id);
+    // biome-ignore lint/complexity/useLiteralKeys: DOMStringMap requires index access under TS noPropertyAccessFromIndexSignature
+    d.dataset['id'] = String(card.id);
     d.innerHTML =
       `<div class="corner tl"><b>${rankName(card.rank)}</b><i>${card.suit}</i></div>` +
       `<div class="pip">${card.suit}</div>` +

@@ -420,7 +420,8 @@ function init(): void {
     const target = event.target as Element | null;
     const el = target?.closest<HTMLElement>('.card');
     if (!el) return;
-    const card = state.hand.find((item) => item.id === Number(el.dataset.id));
+    // biome-ignore lint/complexity/useLiteralKeys: DOMStringMap requires index access under TS noPropertyAccessFromIndexSignature
+    const card = state.hand.find((item) => item.id === Number(el.dataset['id']));
     if (card) onCardClick(card);
   });
   $('#btnPlay').addEventListener('click', () => {
