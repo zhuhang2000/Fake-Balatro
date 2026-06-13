@@ -1,6 +1,5 @@
 const path = require('path');
 const fs = require('fs');
-const shopFlow = require(path.join(__dirname, '..', 'src', 'flow', 'shop-flow.js'));
 const scoringFlow = require(path.join(__dirname, '..', 'src', 'flow', 'scoring-flow.js'));
 const packageJson = require(path.join(__dirname, '..', 'package.json'));
 const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
@@ -71,6 +70,7 @@ exists('src/systems/fx.ts');
 exists('src/systems/grain.ts');
 exists('src/systems/announcer.ts');
 exists('src/flow/events-flow.ts');
+exists('src/flow/shop-flow.ts');
 exists('src/ui/hud-view.ts');
 exists('src/ui/readout-view.ts');
 exists('src/ui/modals-view.ts');
@@ -89,6 +89,7 @@ notExists('src/systems/fx.js');
 notExists('src/systems/grain.js');
 notExists('src/systems/announcer.js');
 notExists('src/flow/events-flow.js');
+notExists('src/flow/shop-flow.js');
 notExists('src/ui/hud-view.js');
 notExists('src/ui/readout-view.js');
 notExists('src/ui/modals-view.js');
@@ -110,7 +111,7 @@ includes('main imports modals view module', mainTs, /from '\.\/ui\/modals-view'/
 includes('main imports cards view module', mainTs, /from '\.\/ui\/cards-view'/);
 includes('main imports shop view module', mainTs, /from '\.\/ui\/shop-view'/);
 if (
-  /\.\/(?:systems\/(?:audio|fx|grain|announcer)|flow\/events-flow|ui\/(?:hud-view|readout-view|modals-view|cards-view|shop-view))\.js/.test(
+  /\.\/(?:systems\/(?:audio|fx|grain|announcer)|flow\/(?:events-flow|shop-flow)|ui\/(?:hud-view|readout-view|modals-view|cards-view|shop-view))\.js/.test(
     mainTs
   )
 ) {
@@ -132,7 +133,8 @@ const stateMod = safeRequire('.tmp/test-build/state/game-state.js');
 has('createInitialState', stateMod.createInitialState);
 has('createShopState', stateMod.createShopState);
 has('sellPrice', stateMod.sellPrice);
-has('createShopFlow', shopFlow.createShopFlow);
+const shopFlowMod = safeRequire('.tmp/test-build/flow/shop-flow.js');
+has('createShopFlow', shopFlowMod.createShopFlow);
 has('createScoringFlow', scoringFlow.createScoringFlow);
 const cardsViewMod = safeRequire('.tmp/test-build/ui/cards-view.js');
 has('createCardsView', cardsViewMod.createCardsView);
