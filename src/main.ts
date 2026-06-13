@@ -1,6 +1,7 @@
 import * as Core from './core';
 import { EVENTS, rollEvent } from './data/events';
 import { createJokers, drawJokerIcon } from './data/jokers';
+import { createEventsFlow } from './flow/events-flow';
 import {
   DISCARDS_PER,
   HANDS_PER,
@@ -13,20 +14,19 @@ import {
   resetLevelMods,
   sellPrice,
 } from './state/game-state';
+import { createAnnouncer } from './systems/announcer';
 /* ═══════════════════════════════════════════════════════════
    小丑终端 JOKER.SYS — 游戏流程入口
    ═══════════════════════════════════════════════════════════ */
 import { SFX, Snd } from './systems/audio';
 import { createVisuals } from './systems/fx';
 import { createGrain } from './systems/grain';
-import type { Card, EventRng, GameState, Joker, ShopState } from './types';
+import type { Card, EventRng, EventTrigger, GameState, Joker, ShopState } from './types';
+import { createHudView } from './ui/hud-view';
+import { createModalsView } from './ui/modals-view';
+import { createReadoutView } from './ui/readout-view';
 import './ui/shop-view.js';
 import './ui/cards-view.js';
-import './ui/hud-view.js';
-import './ui/readout-view.js';
-import './ui/modals-view.js';
-import './systems/announcer.js';
-import './flow/events-flow.js';
 import './flow/shop-flow.js';
 import './flow/scoring-flow.js';
 
@@ -72,24 +72,6 @@ type CardsViewApi = {
   renderPlayed(): void;
   sortHand(): void;
 };
-type HudViewApi = {
-  renderButtons(): void;
-  renderCounts(): void;
-  renderGold(): void;
-  renderScore(): void;
-};
-type ReadoutViewApi = {
-  resetReadout(): void;
-  updatePreview(): void;
-};
-type ModalsViewApi = {
-  buildHandTable(): void;
-  buildStatesModal(): void;
-  hideModal(selector: string): void;
-  hideModals(): void;
-  renderStatus(): void;
-  showModal(selector: string): void;
-};
 type ShopViewApi = {
   renderShop(): void;
 };
@@ -101,20 +83,8 @@ type ShopFlowApi = {
 type ScoringFlowApi = {
   playHand(): Promise<void>;
 };
-type AnnouncerApi = {
-  announce(text: string, tone?: string, hold?: number): void;
-  splash(title: string, tone?: string): void;
-};
-type EventsFlowApi = {
-  maybeFire(trigger: string): unknown;
-};
 type RuntimeRoot = typeof globalThis & {
-  JokerAnnouncer: { createAnnouncer(deps: unknown): AnnouncerApi };
   JokerCardsView: { createCardsView(deps: unknown): CardsViewApi };
-  JokerEventsFlow: { createEventsFlow(deps: unknown): EventsFlowApi };
-  JokerHudView: { createHudView(deps: unknown): HudViewApi };
-  JokerModalsView: { createModalsView(deps: unknown): ModalsViewApi };
-  JokerReadoutView: { createReadoutView(deps: unknown): ReadoutViewApi };
   JokerScoringFlow: { createScoringFlow(deps: unknown): ScoringFlowApi };
   JokerShopFlow: { createShopFlow(deps: unknown): ShopFlowApi };
   JokerShopView: { createShopView(deps: unknown): ShopViewApi };
@@ -134,7 +104,7 @@ const JOKERS: Joker[] = createJokers(() => state);
 const shopState: ShopState = createShopState();
 const shopHandlers: Record<string, unknown> = {};
 
-const announcer = runtime.JokerAnnouncer.createAnnouncer({ $ });
+const announcer = createAnnouncer({ $ });
 const cardsView = runtime.JokerCardsView.createCardsView({
   $,
   state,
@@ -146,9 +116,9 @@ const cardsView = runtime.JokerCardsView.createCardsView({
   handlers: shopHandlers,
 });
 const { sortHand, renderHand, renderPlayed, renderJokers } = cardsView;
-const hudView = runtime.JokerHudView.createHudView({ $, state, fmt });
+const hudView = createHudView({ $, state, fmt });
 const { renderCounts, renderScore, renderGold, renderButtons } = hudView;
-const readoutView = runtime.JokerReadoutView.createReadoutView({
+const readoutView = createReadoutView({
   $,
   state,
   fmt,
@@ -159,7 +129,7 @@ const readoutView = runtime.JokerReadoutView.createReadoutView({
   renderButtons,
 });
 const { resetReadout, updatePreview } = readoutView;
-const modalsView = runtime.JokerModalsView.createModalsView({
+const modalsView = createModalsView({
   $,
   state,
   HAND_ORDER,
@@ -170,7 +140,7 @@ const { showModal, hideModal, hideModals, buildHandTable, renderStatus, buildSta
   modalsView;
 const grain = createGrain({ $ });
 const { makeGrain } = grain;
-const eventsFlow = runtime.JokerEventsFlow.createEventsFlow({
+const eventsFlow = createEventsFlow({
   state,
   events: EVENTS,
   rollEvent,
@@ -205,7 +175,7 @@ const scoringFlow = runtime.JokerScoringFlow.createScoringFlow({
   glitchFx,
   animateNumber,
   announcer,
-  maybeFireEvent: (trigger: string) => eventsFlow.maybeFire(trigger),
+  maybeFireEvent: (trigger: EventTrigger) => eventsFlow.maybeFire(trigger),
   renderButtons,
   renderCounts,
   renderGold,
