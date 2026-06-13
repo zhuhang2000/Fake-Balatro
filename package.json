@@ -1,5 +1,5 @@
 {
-  "name": "jokecard",
+  "name": "fake-balatro",
   "version": "1.0.0",
   "description": "一个零外部依赖的像素纸牌游戏原型",
   "main": "src/main.ts",
