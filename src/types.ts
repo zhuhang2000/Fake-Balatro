@@ -421,3 +421,43 @@ export interface ShopViewApi {
   renderShop(): void;
   renderUpgradeOffers(box: Element): void;
 }
+
+export interface ShopFlowCoreApi {
+  shuffle<T>(items: T[]): T[];
+  choice<T>(items: readonly T[]): T;
+  HAND_ORDER: readonly HandTypeKey[];
+  MAX_HAND_LEVEL: number;
+  getHandStats(key: HandTypeKey, levels: HandLevels): HandStats;
+  upgradePrice(key: HandTypeKey, levels: HandLevels): number;
+}
+
+export interface ShopFlowDeps {
+  $: DomQuery;
+  state: GameState;
+  shopState: ShopState;
+  JOKERS: Joker[];
+  Core: ShopFlowCoreApi;
+  JOKER_SLOTS_CAP: number;
+  sellPrice(joker: Joker): number;
+  SFX: SfxApi;
+  FX: FxApi;
+  elCenter(el: Element): { x: number; y: number };
+  floatText(x: number, y: number, text: string, className?: string): void;
+  popEl(el: Element, className?: string): void;
+  glitchFx(): void;
+  announcer: AnnouncerApi;
+  renderGold(): void;
+  renderJokers(): void;
+  buildHandTable(): void;
+  showModal(selector: string): void;
+  renderShop(): void;
+  renderStatus?: () => void;
+}
+
+export interface ShopFlowApi extends ShopViewHandlers {
+  rollOffers(): void;
+  rollUpgradeOffers(): void;
+  rollAnomalies(): void;
+  openShop(base: number, bonus: number, skipBonus: number, interest: number): void;
+  rerollShop(): void;
+}
