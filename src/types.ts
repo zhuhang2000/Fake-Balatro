@@ -190,3 +190,100 @@ export interface ChaosEvent {
   canFire(state: GameState): boolean;
   apply(state: GameState, rng: EventRng): EventOutcome;
 }
+export type DomQuery = <T extends Element = HTMLElement>(selector: string) => T;
+export type NumberFormatter = (value: number) => string;
+
+export interface ToneOptions {
+  f?: number;
+  f2?: number | null;
+  type?: OscillatorType;
+  dur?: number;
+  vol?: number;
+  at?: number;
+}
+
+export interface NoiseOptions {
+  dur?: number;
+  vol?: number;
+  at?: number;
+  ftype?: BiquadFilterType;
+  f?: number;
+  f2?: number | null;
+  q?: number;
+}
+
+export interface SoundApi {
+  ctx: AudioContext | null;
+  init(): void;
+  t(): number;
+  tone(options?: ToneOptions): void;
+  noise(options?: NoiseOptions): void;
+  joker(index?: number): void;
+}
+
+export interface SfxApi {
+  bigmult(): void;
+  breakthrough(): void;
+  buy(): void;
+  coin(): void;
+  crack(): void;
+  deny(): void;
+  discard(): void;
+  draw(index?: number): void;
+  echo(index?: number): void;
+  edge(): void;
+  event(kind: EventKind | string): void;
+  gild(): void;
+  joker(index?: number): void;
+  lose(): void;
+  mult(): void;
+  overkill(): void;
+  play(): void;
+  select(on: boolean): void;
+  settle(): void;
+  shatter(): void;
+  taint(): void;
+  tick(index?: number): void;
+  win(): void;
+}
+
+export interface FxApi {
+  init(): void;
+  sparks(x: number, y: number, color: string, count?: number, speed?: number): void;
+  coins(x: number, y: number, count?: number): void;
+  confetti(): void;
+}
+
+export interface VisualsDeps {
+  $: DomQuery;
+  rnd(a: number, b: number): number;
+  ri(a: number, b: number): number;
+  choice<T>(items: readonly T[]): T;
+  fmt: NumberFormatter;
+  SFX: SfxApi;
+}
+
+export interface VisualsApi {
+  FX: FxApi;
+  animateNumber(
+    el: Element,
+    from: number,
+    to: number,
+    duration?: number,
+    tick?: boolean
+  ): Promise<void>;
+  elCenter(el: Element): { x: number; y: number };
+  flash(color?: string): void;
+  floatText(x: number, y: number, text: string, className?: string): void;
+  glitchFx(): void;
+  popEl(el: Element, className?: string): void;
+  shake(level?: number): void;
+}
+
+export interface GrainDeps {
+  $: DomQuery;
+}
+
+export interface GrainApi {
+  makeGrain(): void;
+}
