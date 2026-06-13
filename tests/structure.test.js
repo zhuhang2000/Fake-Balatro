@@ -1,9 +1,7 @@
 const path = require('path');
 const fs = require('fs');
-const shopView = require(path.join(__dirname, '..', 'src', 'ui', 'shop-view.js'));
 const shopFlow = require(path.join(__dirname, '..', 'src', 'flow', 'shop-flow.js'));
 const scoringFlow = require(path.join(__dirname, '..', 'src', 'flow', 'scoring-flow.js'));
-const cardsView = require(path.join(__dirname, '..', 'src', 'ui', 'cards-view.js'));
 const packageJson = require(path.join(__dirname, '..', 'package.json'));
 const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const mainTs = fs.readFileSync(path.join(__dirname, '..', 'src', 'main.ts'), 'utf8');
@@ -76,6 +74,8 @@ exists('src/flow/events-flow.ts');
 exists('src/ui/hud-view.ts');
 exists('src/ui/readout-view.ts');
 exists('src/ui/modals-view.ts');
+exists('src/ui/cards-view.ts');
+exists('src/ui/shop-view.ts');
 notExists('src/main.js');
 notExists('src/core/utils.js');
 notExists('src/core/cards.js');
@@ -92,6 +92,8 @@ notExists('src/flow/events-flow.js');
 notExists('src/ui/hud-view.js');
 notExists('src/ui/readout-view.js');
 notExists('src/ui/modals-view.js');
+notExists('src/ui/cards-view.js');
+notExists('src/ui/shop-view.js');
 includes(
   'index module entry',
   indexHtml,
@@ -105,8 +107,10 @@ includes('main imports events flow module', mainTs, /from '\.\/flow\/events-flow
 includes('main imports hud view module', mainTs, /from '\.\/ui\/hud-view'/);
 includes('main imports readout view module', mainTs, /from '\.\/ui\/readout-view'/);
 includes('main imports modals view module', mainTs, /from '\.\/ui\/modals-view'/);
+includes('main imports cards view module', mainTs, /from '\.\/ui\/cards-view'/);
+includes('main imports shop view module', mainTs, /from '\.\/ui\/shop-view'/);
 if (
-  /\.\/(?:systems\/(?:audio|fx|grain|announcer)|flow\/events-flow|ui\/(?:hud-view|readout-view|modals-view))\.js/.test(
+  /\.\/(?:systems\/(?:audio|fx|grain|announcer)|flow\/events-flow|ui\/(?:hud-view|readout-view|modals-view|cards-view|shop-view))\.js/.test(
     mainTs
   )
 ) {
@@ -128,10 +132,12 @@ const stateMod = safeRequire('.tmp/test-build/state/game-state.js');
 has('createInitialState', stateMod.createInitialState);
 has('createShopState', stateMod.createShopState);
 has('sellPrice', stateMod.sellPrice);
-has('createShopView', shopView.createShopView);
 has('createShopFlow', shopFlow.createShopFlow);
 has('createScoringFlow', scoringFlow.createScoringFlow);
-has('createCardsView', cardsView.createCardsView);
+const cardsViewMod = safeRequire('.tmp/test-build/ui/cards-view.js');
+has('createCardsView', cardsViewMod.createCardsView);
+const shopViewMod = safeRequire('.tmp/test-build/ui/shop-view.js');
+has('createShopView', shopViewMod.createShopView);
 const hudViewMod = safeRequire('.tmp/test-build/ui/hud-view.js');
 has('createHudView', hudViewMod.createHudView);
 const readoutViewMod = safeRequire('.tmp/test-build/ui/readout-view.js');
