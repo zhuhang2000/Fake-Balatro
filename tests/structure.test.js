@@ -7,11 +7,11 @@ const cardsView = require(path.join(__dirname, '..', 'src', 'ui', 'cards-view.js
 const hudView = require(path.join(__dirname, '..', 'src', 'ui', 'hud-view.js'));
 const readoutView = require(path.join(__dirname, '..', 'src', 'ui', 'readout-view.js'));
 const modalsView = require(path.join(__dirname, '..', 'src', 'ui', 'modals-view.js'));
-const grain = require(path.join(__dirname, '..', 'src', 'systems', 'grain.js'));
 const announcer = require(path.join(__dirname, '..', 'src', 'systems', 'announcer.js'));
 const eventsFlow = require(path.join(__dirname, '..', 'src', 'flow', 'events-flow.js'));
 const packageJson = require(path.join(__dirname, '..', 'package.json'));
 const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+const mainTs = fs.readFileSync(path.join(__dirname, '..', 'src', 'main.ts'), 'utf8');
 const ciWorkflow = fs.readFileSync(
   path.join(__dirname, '..', '.github', 'workflows', 'ci.yml'),
   'utf8'
@@ -73,6 +73,9 @@ exists('src/state/game-state.ts');
 exists('src/data/jokers.ts');
 exists('src/core/card-states.ts');
 exists('src/data/events.ts');
+exists('src/systems/audio.ts');
+exists('src/systems/fx.ts');
+exists('src/systems/grain.ts');
 exists('src/systems/announcer.js');
 exists('src/flow/events-flow.js');
 notExists('src/main.js');
@@ -83,11 +86,23 @@ notExists('src/core/hands.js');
 notExists('src/core/index.js');
 notExists('src/state/game-state.js');
 notExists('src/data/jokers.js');
+notExists('src/systems/audio.js');
+notExists('src/systems/fx.js');
+notExists('src/systems/grain.js');
 includes(
   'index module entry',
   indexHtml,
   /<script\s+type="module"\s+src="\/src\/main\.ts"><\/script>/
 );
+includes('main imports audio module', mainTs, /from '\.\/systems\/audio'/);
+includes('main imports visuals module', mainTs, /from '\.\/systems\/fx'/);
+includes('main imports grain module', mainTs, /from '\.\/systems\/grain'/);
+if (/\.\/systems\/(?:audio|fx|grain)\.js/.test(mainTs)) {
+  console.error('FAIL main.ts should not import migrated systems through .js side effects');
+  fail++;
+} else {
+  console.log('ok main.ts imports migrated systems directly');
+}
 includes('package dev script', packageJson.scripts.dev || '', /\bvite\b/);
 includes('package build script', packageJson.scripts.build || '', /\bvite build\b/);
 includes('ci test script', ciWorkflow, /\bnpm test\b/);
@@ -108,9 +123,15 @@ has('createCardsView', cardsView.createCardsView);
 has('createHudView', hudView.createHudView);
 has('createReadoutView', readoutView.createReadoutView);
 has('createModalsView', modalsView.createModalsView);
-has('createGrain', grain.createGrain);
 has('createAnnouncer', announcer.createAnnouncer);
 has('createEventsFlow', eventsFlow.createEventsFlow);
+const audioMod = safeRequire('.tmp/test-build/systems/audio.js');
+has('Snd', audioMod.Snd, 'object');
+has('SFX', audioMod.SFX, 'object');
+const visualsMod = safeRequire('.tmp/test-build/systems/fx.js');
+has('createVisuals', visualsMod.createVisuals);
+const grainMod = safeRequire('.tmp/test-build/systems/grain.js');
+has('createGrain', grainMod.createGrain);
 const eventsMod = safeRequire('.tmp/test-build/data/events.js');
 has('rollEvent', eventsMod.rollEvent);
 const coreMod = safeRequire('.tmp/test-build/core/index.js');
