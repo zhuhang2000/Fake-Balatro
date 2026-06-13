@@ -16,16 +16,15 @@ import {
 /* ═══════════════════════════════════════════════════════════
    小丑终端 JOKER.SYS — 游戏流程入口
    ═══════════════════════════════════════════════════════════ */
+import { SFX, Snd } from './systems/audio';
+import { createVisuals } from './systems/fx';
+import { createGrain } from './systems/grain';
 import type { Card, EventRng, GameState, Joker, ShopState } from './types';
-
-import './systems/audio.js';
-import './systems/fx.js';
 import './ui/shop-view.js';
 import './ui/cards-view.js';
 import './ui/hud-view.js';
 import './ui/readout-view.js';
 import './ui/modals-view.js';
-import './systems/grain.js';
 import './systems/announcer.js';
 import './flow/events-flow.js';
 import './flow/shop-flow.js';
@@ -67,57 +66,6 @@ const {
 
 const rng: EventRng = { rnd, ri, choice };
 
-type SfxApi = {
-  bigmult(): void;
-  breakthrough(): void;
-  buy(): void;
-  coin(): void;
-  crack(): void;
-  deny(): void;
-  discard(): void;
-  draw(index?: number): void;
-  echo(index?: number): void;
-  edge(): void;
-  event(kind: string): void;
-  gild(): void;
-  joker(index?: number): void;
-  lose(): void;
-  mult(): void;
-  overkill(): void;
-  play(): void;
-  select(on: boolean): void;
-  settle(): void;
-  shatter(): void;
-  taint(): void;
-  tick(index?: number): void;
-  win(): void;
-};
-type SoundApi = {
-  ctx: AudioContext | null;
-  init(): void;
-};
-type FxApi = {
-  coins(x: number, y: number, count?: number): void;
-  confetti(): void;
-  init(): void;
-  sparks(x: number, y: number, color: string, count?: number, speed?: number): void;
-};
-type VisualsApi = {
-  FX: FxApi;
-  animateNumber(
-    el: Element,
-    from: number,
-    to: number,
-    duration?: number,
-    tick?: boolean
-  ): Promise<void>;
-  elCenter(el: Element): { x: number; y: number };
-  flash(color?: string): void;
-  floatText(x: number, y: number, text: string, className?: string): void;
-  glitchFx(): void;
-  popEl(el: Element, className?: string): void;
-  shake(level?: number): void;
-};
 type CardsViewApi = {
   renderHand(fresh?: Card[]): void;
   renderJokers(): void;
@@ -142,9 +90,6 @@ type ModalsViewApi = {
   renderStatus(): void;
   showModal(selector: string): void;
 };
-type GrainApi = {
-  makeGrain(): void;
-};
 type ShopViewApi = {
   renderShop(): void;
 };
@@ -165,22 +110,24 @@ type EventsFlowApi = {
 };
 type RuntimeRoot = typeof globalThis & {
   JokerAnnouncer: { createAnnouncer(deps: unknown): AnnouncerApi };
-  JokerAudio: { Snd: SoundApi; SFX: SfxApi };
   JokerCardsView: { createCardsView(deps: unknown): CardsViewApi };
   JokerEventsFlow: { createEventsFlow(deps: unknown): EventsFlowApi };
-  JokerGrain: { createGrain(deps: unknown): GrainApi };
   JokerHudView: { createHudView(deps: unknown): HudViewApi };
   JokerModalsView: { createModalsView(deps: unknown): ModalsViewApi };
   JokerReadoutView: { createReadoutView(deps: unknown): ReadoutViewApi };
   JokerScoringFlow: { createScoringFlow(deps: unknown): ScoringFlowApi };
   JokerShopFlow: { createShopFlow(deps: unknown): ShopFlowApi };
   JokerShopView: { createShopView(deps: unknown): ShopViewApi };
-  JokerVisuals: { createVisuals(deps: unknown): VisualsApi };
 };
 const runtime = globalThis as RuntimeRoot;
-const { Snd, SFX } = runtime.JokerAudio;
-const { FX, elCenter, floatText, popEl, shake, flash, glitchFx, animateNumber } =
-  runtime.JokerVisuals.createVisuals({ $, rnd, ri, choice, fmt, SFX });
+const { FX, elCenter, floatText, popEl, shake, flash, glitchFx, animateNumber } = createVisuals({
+  $,
+  rnd,
+  ri,
+  choice,
+  fmt,
+  SFX,
+});
 
 const state: GameState = createInitialState();
 const JOKERS: Joker[] = createJokers(() => state);
@@ -221,7 +168,7 @@ const modalsView = runtime.JokerModalsView.createModalsView({
 });
 const { showModal, hideModal, hideModals, buildHandTable, renderStatus, buildStatesModal } =
   modalsView;
-const grain = runtime.JokerGrain.createGrain({ $ });
+const grain = createGrain({ $ });
 const { makeGrain } = grain;
 const eventsFlow = runtime.JokerEventsFlow.createEventsFlow({
   state,
