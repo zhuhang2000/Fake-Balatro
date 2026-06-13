@@ -168,6 +168,60 @@
       Snd.tone({ f: 90, f2: 45, type: 'sine', dur: 0.25, vol: 0.5 });
       Snd.noise({ dur: 0.18, vol: 0.26, f: 2500, f2: 300 });
     },
+    event(kind) {
+      if (kind === 'good') {
+        [660, 880, 1320].forEach((f, i) =>
+          Snd.tone({ f, type: 'triangle', dur: 0.09, vol: 0.16, at: i * 0.07 })
+        );
+      } else if (kind === 'bad') {
+        Snd.tone({ f: 320, f2: 70, type: 'sawtooth', dur: 0.34, vol: 0.24 });
+        Snd.tone({ f: 327, f2: 74, type: 'sawtooth', dur: 0.34, vol: 0.16, at: 0.02 });
+        Snd.noise({ dur: 0.2, vol: 0.14, f: 800, f2: 120, ftype: 'lowpass' });
+      } else {
+        Snd.tone({ f: 520, f2: 980, type: 'square', dur: 0.1, vol: 0.14 });
+        Snd.tone({ f: 980, f2: 360, type: 'square', dur: 0.14, vol: 0.14, at: 0.09 });
+        Snd.noise({ dur: 0.12, vol: 0.1, f: 3000, f2: 600 });
+      }
+    },
+    gild() {
+      Snd.tone({ f: 2093, type: 'sine', dur: 0.09, vol: 0.13 });
+      Snd.tone({ f: 2637, type: 'sine', dur: 0.16, vol: 0.11, at: 0.05 });
+    },
+    crack() {
+      Snd.noise({ dur: 0.12, vol: 0.32, f: 5200, f2: 900, ftype: 'bandpass', q: 0.6 });
+      Snd.tone({ f: 140, f2: 50, type: 'triangle', dur: 0.14, vol: 0.3 });
+    },
+    echo(n = 0) {
+      const f = 900 * Math.pow(1.0594, Math.min(n, 18));
+      Snd.tone({ f, type: 'square', dur: 0.06, vol: 0.15 });
+      Snd.tone({ f, type: 'square', dur: 0.06, vol: 0.08, at: 0.11 });
+    },
+    taint() {
+      Snd.tone({ f: 420, f2: 180, type: 'sawtooth', dur: 0.18, vol: 0.14 });
+      Snd.tone({ f: 433, f2: 170, type: 'sawtooth', dur: 0.18, vol: 0.1, at: 0.01 });
+    },
+    shatter() {
+      Snd.noise({ dur: 0.28, vol: 0.3, f: 6400, f2: 700, ftype: 'bandpass', q: 0.5 });
+      Snd.tone({ f: 1800, f2: 220, type: 'square', dur: 0.3, vol: 0.14 });
+      Snd.tone({ f: 90, f2: 40, type: 'sine', dur: 0.3, vol: 0.34 });
+    },
+    breakthrough() {
+      Snd.tone({ f: 220, f2: 1760, type: 'sawtooth', dur: 0.4, vol: 0.2 });
+      Snd.tone({ f: 110, f2: 880, type: 'square', dur: 0.4, vol: 0.14, at: 0.04 });
+      Snd.noise({ dur: 0.32, vol: 0.12, f: 600, f2: 6000 });
+    },
+    overkill() {
+      [261, 392, 523, 784, 1047].forEach((f, i) => {
+        Snd.tone({ f, type: 'square', dur: 0.5, vol: 0.12, at: i * 0.03 });
+        Snd.tone({ f: f * 1.01, type: 'sawtooth', dur: 0.4, vol: 0.07, at: i * 0.03 });
+      });
+      Snd.tone({ f: 55, f2: 28, type: 'sine', dur: 0.6, vol: 0.5 });
+    },
+    edge() {
+      Snd.tone({ f: 880, type: 'sine', dur: 0.3, vol: 0.16 });
+      Snd.tone({ f: 92, f2: 60, type: 'triangle', dur: 0.4, vol: 0.3, at: 0.05 });
+      Snd.noise({ dur: 0.4, vol: 0.08, f: 1400, f2: 200, ftype: 'lowpass' });
+    },
   };
 
   const api = { Snd, SFX };

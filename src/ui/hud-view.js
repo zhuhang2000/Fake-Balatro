@@ -26,6 +26,8 @@
       const sel = state.hand.filter((c) => c.sel).length;
       $('#btnPlay').disabled = !(state.phase === 'play' && sel > 0);
       $('#btnDiscard').disabled = !(state.phase === 'play' && sel > 0 && state.discardsLeft > 0);
+      const settle = document.querySelector('#btnSettle');
+      if (settle) settle.classList.toggle('hidden', !(state.cleared && state.phase === 'play'));
     }
 
     return { renderCounts, renderScore, renderGold, renderButtons };

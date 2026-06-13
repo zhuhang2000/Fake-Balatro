@@ -24,13 +24,16 @@
     <div id="hud">
       <div class="hud-box"><div class="hud-label">关 卡</div><div class="hud-value" id="levelNum">1</div></div>
       <div class="hud-box target"><div class="hud-label">目标分数</div><div class="hud-value" id="targetScore">0</div></div>
-      <div class="hud-box scorebox"><div class="hud-label">本关得分</div><div class="hud-value" id="roundScore">0</div></div>
       <div class="hud-box totalbox"><div class="hud-label">累计得分</div><div class="hud-value" id="totalScore">0</div></div>
+      <div class="hud-box scorebox"><div class="hud-label">本关贡献</div><div class="hud-value" id="roundScore">0</div></div>
       <div class="hud-box goldbox"><div class="hud-label">金 币</div><div class="hud-value" id="goldVal">0</div></div>
     </div>
 
     <!-- 小丑栏 -->
     <div id="jokerBar"></div>
+
+    <!-- 常驻状态栏：实时显示本关生效的事件与特殊修正 -->
+    <div id="statusBar"></div>
 
     <!-- 计分读出屏 -->
     <div id="readout">
@@ -56,9 +59,11 @@
         <button id="sortRank" class="btn-mini on">点数</button>
         <button id="sortSuit" class="btn-mini">花色</button>
         <button id="btnHelp" class="btn-mini">牌型表</button>
+        <button id="btnStates" class="btn-mini">特殊牌</button>
       </div>
       <button id="btnPlay" class="btn" disabled>出 牌</button>
       <button id="btnDiscard" class="btn btn-discard" disabled>弃 牌</button>
+      <button id="btnSettle" class="btn btn-gold hidden">结算进店 ▶</button>
       <div class="ctl-group">
         <div class="counter">已选 <span id="selCount">0</span>/5</div>
         <div class="counter">出牌 <span id="handsLeft">0</span></div>
@@ -88,6 +93,15 @@
         <h2>牌 型 表</h2>
         <table id="handTable"></table>
         <div class="modal-actions"><button id="btnCloseHelp" class="btn-mini">关 闭</button></div>
+      </div>
+    </div>
+
+    <!-- 弹窗：特殊牌 / 当前状态 -->
+    <div id="states" class="modal hidden">
+      <div class="modal-card">
+        <h2>状 态 总 览</h2>
+        <div id="statesBody"></div>
+        <div class="modal-actions"><button id="btnCloseStates" class="btn-mini">关 闭</button></div>
       </div>
     </div>
 
@@ -124,6 +138,10 @@
         <div class="boot-note">点击后开启声音（全部由 Web Audio 实时合成）</div>
       </div>
     </div>
+
+    <!-- 系统播报层：故障字幕 + 事件大字 -->
+    <div id="ticker"></div>
+    <div id="eventSplash"><div id="eventSplashText" class="es-text"></div></div>
 
     <!-- 特效层（自下而上：粒子 / 噪点 / 扫描线 / 暗角 / 闪光） -->
     <canvas id="fx"></canvas>

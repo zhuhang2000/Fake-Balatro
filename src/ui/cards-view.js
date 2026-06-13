@@ -1,16 +1,26 @@
 /* Hand, played-card and joker bar rendering. */
 ((root) => {
   function createCardsView(deps) {
-    const { $, state, SUIT_ORDER, rankName, drawJokerIcon, sellPrice, handlers } = deps;
+    const { $, state, SUIT_ORDER, rankName, drawJokerIcon, sellPrice, CARD_STATES, handlers } =
+      deps;
 
     function cardEl(c) {
       const d = document.createElement('div');
       d.className = 'card ' + c.color + (c.sel ? ' sel' : '');
+      if (c.state) d.classList.add('st-' + c.state);
       d.dataset.id = c.id;
       d.innerHTML =
         `<div class="corner tl"><b>${rankName(c.rank)}</b><i>${c.suit}</i></div>` +
         `<div class="pip">${c.suit}</div>` +
         `<div class="corner br"><b>${rankName(c.rank)}</b><i>${c.suit}</i></div>`;
+      if (c.state && CARD_STATES) {
+        const meta = CARD_STATES[c.state];
+        const b = document.createElement('div');
+        b.className = 'stbadge';
+        b.textContent = meta.badge;
+        b.title = `${meta.name}：${meta.desc}`;
+        d.appendChild(b);
+      }
       c.el = d;
       return d;
     }
