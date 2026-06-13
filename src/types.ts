@@ -461,3 +461,48 @@ export interface ShopFlowApi extends ShopViewHandlers {
   openShop(base: number, bonus: number, skipBonus: number, interest: number): void;
   rerollShop(): void;
 }
+
+export interface ScoringFlowDeps {
+  $: DomQuery;
+  state: GameState;
+  MAX_PLAY: number;
+  sleep(ms: number): Promise<void>;
+  fmt: NumberFormatter;
+  chipVal(rank: Rank): number;
+  evaluateHand(cards: Card[], levels: HandLevels): HandEval;
+  stateScoreProc(key: CardStateKey): CardStateProc;
+  CARD_STATES: Record<CardStateKey, CardStateMeta>;
+  SFX: SfxApi;
+  FX: FxApi;
+  elCenter(el: Element): { x: number; y: number };
+  floatText(x: number, y: number, text: string, className?: string): void;
+  popEl(el: Element, className?: string): void;
+  shake(level?: number): void;
+  flash(color?: string): void;
+  glitchFx(): void;
+  animateNumber(
+    el: Element,
+    from: number,
+    to: number,
+    duration?: number,
+    tick?: boolean
+  ): Promise<void>;
+  announcer: AnnouncerApi;
+  maybeFireEvent(trigger: EventTrigger): ChaosEvent | null;
+  renderButtons(): void;
+  renderCounts(): void;
+  renderGold(): void;
+  renderHand(fresh?: Card[]): void;
+  renderPlayed(): void;
+  renderJokers(): void;
+  resetReadout(): void;
+  renderStatus?: () => void;
+  drawTo(): void;
+  refreshCleared(): void;
+  settleLevel(skipped: boolean): Promise<void>;
+  gameOver(): Promise<void>;
+}
+
+export interface ScoringFlowApi {
+  playHand(): Promise<void>;
+}
