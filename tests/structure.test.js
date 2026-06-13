@@ -1,6 +1,5 @@
 const path = require('path');
 const fs = require('fs');
-const scoringFlow = require(path.join(__dirname, '..', 'src', 'flow', 'scoring-flow.js'));
 const packageJson = require(path.join(__dirname, '..', 'package.json'));
 const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const mainTs = fs.readFileSync(path.join(__dirname, '..', 'src', 'main.ts'), 'utf8');
@@ -71,6 +70,7 @@ exists('src/systems/grain.ts');
 exists('src/systems/announcer.ts');
 exists('src/flow/events-flow.ts');
 exists('src/flow/shop-flow.ts');
+exists('src/flow/scoring-flow.ts');
 exists('src/ui/hud-view.ts');
 exists('src/ui/readout-view.ts');
 exists('src/ui/modals-view.ts');
@@ -90,6 +90,7 @@ notExists('src/systems/grain.js');
 notExists('src/systems/announcer.js');
 notExists('src/flow/events-flow.js');
 notExists('src/flow/shop-flow.js');
+notExists('src/flow/scoring-flow.js');
 notExists('src/ui/hud-view.js');
 notExists('src/ui/readout-view.js');
 notExists('src/ui/modals-view.js');
@@ -105,13 +106,14 @@ includes('main imports visuals module', mainTs, /from '\.\/systems\/fx'/);
 includes('main imports grain module', mainTs, /from '\.\/systems\/grain'/);
 includes('main imports announcer module', mainTs, /from '\.\/systems\/announcer'/);
 includes('main imports events flow module', mainTs, /from '\.\/flow\/events-flow'/);
+includes('main imports scoring flow module', mainTs, /from '\.\/flow\/scoring-flow'/);
 includes('main imports hud view module', mainTs, /from '\.\/ui\/hud-view'/);
 includes('main imports readout view module', mainTs, /from '\.\/ui\/readout-view'/);
 includes('main imports modals view module', mainTs, /from '\.\/ui\/modals-view'/);
 includes('main imports cards view module', mainTs, /from '\.\/ui\/cards-view'/);
 includes('main imports shop view module', mainTs, /from '\.\/ui\/shop-view'/);
 if (
-  /\.\/(?:systems\/(?:audio|fx|grain|announcer)|flow\/(?:events-flow|shop-flow)|ui\/(?:hud-view|readout-view|modals-view|cards-view|shop-view))\.js/.test(
+  /\.\/(?:systems\/(?:audio|fx|grain|announcer)|flow\/(?:events-flow|shop-flow|scoring-flow)|ui\/(?:hud-view|readout-view|modals-view|cards-view|shop-view))\.js/.test(
     mainTs
   )
 ) {
@@ -135,7 +137,8 @@ has('createShopState', stateMod.createShopState);
 has('sellPrice', stateMod.sellPrice);
 const shopFlowMod = safeRequire('.tmp/test-build/flow/shop-flow.js');
 has('createShopFlow', shopFlowMod.createShopFlow);
-has('createScoringFlow', scoringFlow.createScoringFlow);
+const scoringFlowMod = safeRequire('.tmp/test-build/flow/scoring-flow.js');
+has('createScoringFlow', scoringFlowMod.createScoringFlow);
 const cardsViewMod = safeRequire('.tmp/test-build/ui/cards-view.js');
 has('createCardsView', cardsViewMod.createCardsView);
 const shopViewMod = safeRequire('.tmp/test-build/ui/shop-view.js');
