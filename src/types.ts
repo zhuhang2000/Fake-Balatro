@@ -367,3 +367,57 @@ export interface ModalsViewApi {
   renderStatus(): void;
   showModal(selector: string): void;
 }
+export interface CardsViewHandlers {
+  sellJoker(joker: Joker): void;
+}
+
+export interface CardsViewDeps {
+  $: DomQuery;
+  state: GameState;
+  SUIT_ORDER: Record<Suit, number>;
+  rankName(rank: Rank): string;
+  drawJokerIcon(canvas: HTMLCanvasElement, art: JokerArt): void;
+  sellPrice(joker: Joker): number;
+  CARD_STATES: Record<CardStateKey, CardStateMeta>;
+  handlers: CardsViewHandlers;
+}
+
+export interface CardsViewApi {
+  cardEl(card: Card): HTMLElement;
+  renderHand(fresh?: Card[]): void;
+  renderJokers(): void;
+  renderPlayed(): void;
+  sortHand(): void;
+}
+
+export interface ShopViewHandlers extends CardsViewHandlers {
+  effPrice(price: number): number;
+  buyJoker(joker: Joker): void;
+  buyUpgrade(offer: ShopOffer): void;
+  buyMystery(): void;
+  buyService(): void;
+  buyRisk(): void;
+  buySlot(price: number): void;
+}
+
+export interface ShopViewDeps {
+  $: DomQuery;
+  state: GameState;
+  shopState: ShopState;
+  handlers: ShopViewHandlers;
+  HAND_TYPES: Record<HandTypeKey, HandBaseStats>;
+  MAX_HAND_LEVEL: number;
+  JOKER_SLOTS_BASE: number;
+  JOKER_SLOTS_CAP: number;
+  getHandStats(key: HandTypeKey, levels: HandLevels): HandStats;
+  upgradePrice(key: HandTypeKey, levels: HandLevels): number;
+  sellPrice(joker: Joker): number;
+  drawJokerIcon(canvas: HTMLCanvasElement, art: JokerArt): void;
+  renderGold(): void;
+}
+
+export interface ShopViewApi {
+  drawSlotIcon(canvas: HTMLCanvasElement): void;
+  renderShop(): void;
+  renderUpgradeOffers(box: Element): void;
+}
