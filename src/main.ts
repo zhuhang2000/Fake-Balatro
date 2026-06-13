@@ -2,6 +2,7 @@ import * as Core from './core';
 import { EVENTS, rollEvent } from './data/events';
 import { createJokers, drawJokerIcon } from './data/jokers';
 import { createEventsFlow } from './flow/events-flow';
+import { createShopFlow } from './flow/shop-flow';
 import {
   DISCARDS_PER,
   HANDS_PER,
@@ -36,7 +37,6 @@ import { createHudView } from './ui/hud-view';
 import { createModalsView } from './ui/modals-view';
 import { createReadoutView } from './ui/readout-view';
 import { createShopView } from './ui/shop-view';
-import './flow/shop-flow.js';
 import './flow/scoring-flow.js';
 
 const $ = <T extends Element = HTMLElement>(selector: string): T => {
@@ -75,17 +75,11 @@ const {
 
 const rng: EventRng = { rnd, ri, choice };
 
-type ShopFlowApi = {
-  openShop(base: number, bonus: number, skipBonus: number, interest: number): void;
-  rerollShop(): void;
-  [key: string]: unknown;
-};
 type ScoringFlowApi = {
   playHand(): Promise<void>;
 };
 type RuntimeRoot = typeof globalThis & {
   JokerScoringFlow: { createScoringFlow(deps: unknown): ScoringFlowApi };
-  JokerShopFlow: { createShopFlow(deps: unknown): ShopFlowApi };
 };
 const runtime = globalThis as RuntimeRoot;
 const { FX, elCenter, floatText, popEl, shake, flash, glitchFx, animateNumber } = createVisuals({
@@ -369,7 +363,7 @@ const shopView = createShopView({
   renderGold,
 });
 const { renderShop } = shopView;
-const shopFlow = runtime.JokerShopFlow.createShopFlow({
+const shopFlow = createShopFlow({
   $,
   state,
   shopState,
