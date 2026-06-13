@@ -80,6 +80,13 @@ export interface JokerEffect {
   infect?: boolean;
 }
 
+/* Context handed to every joker hook so effects read state and draw randomness
+   through the single injected source rather than reaching for Math.random. */
+export interface JokerContext {
+  state: GameState;
+  rng: GameRng;
+}
+
 export type JokerPattern = 'stripe' | 'check' | 'none';
 export type JokerEye = 'dot' | 'x' | 'slit' | 'cyclops' | 'mixed' | 'coin' | 'o';
 export type JokerMouth =
@@ -109,8 +116,8 @@ export interface Joker {
   price: number;
   desc: string;
   art: JokerArt;
-  perCard?: (card: Card, ev: HandEval) => JokerEffect | null;
-  onHand?: (ev: HandEval, played: Card[]) => JokerEffect | null;
+  perCard?: (card: Card, ev: HandEval, ctx: JokerContext) => JokerEffect | null;
+  onHand?: (ev: HandEval, played: Card[], ctx: JokerContext) => JokerEffect | null;
   el?: HTMLElement;
 }
 
@@ -175,6 +182,12 @@ export interface EventRng {
   rnd(a: number, b: number): number;
   ri(a: number, b: number): number;
   choice<T>(items: readonly T[]): T;
+}
+
+/* The single random source for all game-affecting randomness. Swapping its
+   backing function (default Math.random) makes a whole run reproducible. */
+export interface GameRng extends EventRng {
+  shuffle<T>(items: T[]): T[];
 }
 
 export interface EventOutcome {
@@ -437,6 +450,7 @@ export interface ShopFlowDeps {
   shopState: ShopState;
   JOKERS: Joker[];
   Core: ShopFlowCoreApi;
+  rng: GameRng;
   JOKER_SLOTS_CAP: number;
   sellPrice(joker: Joker): number;
   SFX: SfxApi;
@@ -465,6 +479,7 @@ export interface ShopFlowApi extends ShopViewHandlers {
 export interface ScoringFlowDeps {
   $: DomQuery;
   state: GameState;
+  rng: GameRng;
   MAX_PLAY: number;
   sleep(ms: number): Promise<void>;
   fmt: NumberFormatter;
